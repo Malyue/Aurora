@@ -1,0 +1,12 @@
+package crypt
+
+import "golang.org/x/crypto/bcrypt"
+
+func GeneratePassword(password []byte) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
+	return string(hash), err
+}
+
+func ComparePassword(password []byte, dbPassword []byte) error {
+	return bcrypt.CompareHashAndPassword(password, dbPassword)
+}
