@@ -1,4 +1,4 @@
-package geteway
+package user
 
 import "github.com/sirupsen/logrus"
 

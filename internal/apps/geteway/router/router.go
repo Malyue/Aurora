@@ -1,6 +1,7 @@
 package router
 
 import (
+	"Aurora/internal/apps/geteway/handler/user"
 	middleware "Aurora/internal/apps/geteway/middlewares"
 	"github.com/gin-gonic/gin"
 )
@@ -21,5 +22,9 @@ func InitRouter() *gin.Engine {
 		c.JSON(200, map[string]any{"status": "ok"})
 	})
 
-	Init()
+	r.GET("/hello", user.HelloHandler)
+
+	Init(r)
+
+	return r
 }

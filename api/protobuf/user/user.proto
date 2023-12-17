@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package user;
+option go_package = "proto-go/user";
+
+message HelloRequest {
+}
+
+message HelloResponse{
+  string msg = 1;
+}
+
+service UserService {
+  rpc Hello(HelloRequest) returns (HelloResponse) {}
+}

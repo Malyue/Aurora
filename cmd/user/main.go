@@ -1,25 +1,26 @@
 package main
 
 import (
-	_gateway "Aurora/internal/apps/geteway"
-	"os"
+	_user "Aurora/internal/apps/user"
 	"path/filepath"
 )
 
-const config = "config.yaml"
+const config = "cmd/user/config.yaml"
 
 func main() {
-	exePath, err := os.Executable()
-	if err != nil {
-		panic(err)
-	}
-	filePath := filepath.Join(filepath.Dir(exePath), config)
-
-	server, err := _gateway.New(
-		_gateway.WithConfig(filePath))
+	dir, err := filepath.Abs(filepath.Dir("."))
+	filePath := filepath.Join(dir, config)
 	if err != nil {
 		panic(err)
 	}
 
-	server.Run()
+	server, err := _user.New(
+		_user.WithConfig(filePath))
+	if err != nil {
+		panic(err)
+	}
+
+	if err := server.Run(); err != nil {
+		panic(err)
+	}
 }
