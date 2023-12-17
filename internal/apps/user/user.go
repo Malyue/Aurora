@@ -16,8 +16,8 @@ type Config struct {
 }
 
 type Server struct {
-	Cfg        Config
-	UserServer userpb.UserServiceServer
+	Cfg Config
+	//UserServer userpb.UserServiceServer
 }
 
 func (s *Server) Run() error {

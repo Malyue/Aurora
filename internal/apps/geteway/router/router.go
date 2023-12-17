@@ -3,10 +3,11 @@ package router
 import (
 	"Aurora/internal/apps/geteway/handler/user"
 	middleware "Aurora/internal/apps/geteway/middlewares"
+	"Aurora/internal/apps/geteway/svc"
 	"github.com/gin-gonic/gin"
 )
 
-func InitRouter() *gin.Engine {
+func InitRouter(ctx *svc.ServerCtx) *gin.Engine {
 	r := gin.New()
 	r.Use(middleware.CorsMiddleware())
 
@@ -22,9 +23,9 @@ func InitRouter() *gin.Engine {
 		c.JSON(200, map[string]any{"status": "ok"})
 	})
 
-	r.GET("/hello", user.HelloHandler)
+	r.GET("/hello", user.HelloHandler(ctx))
 
-	Init(r)
+	Init(ctx, r)
 
 	return r
 }

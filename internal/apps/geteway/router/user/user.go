@@ -1,7 +1,10 @@
 package user
 
-import "github.com/gin-gonic/gin"
+import (
+	"Aurora/internal/apps/geteway/svc"
+	"github.com/gin-gonic/gin"
+)
 
-func RegisterRouter(r *gin.Engine) {
+func RegisterRouter(ctx *svc.ServerCtx, r *gin.Engine) {
 
 }

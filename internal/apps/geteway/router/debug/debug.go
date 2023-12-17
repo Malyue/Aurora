@@ -1,11 +1,12 @@
 package debug
 
 import (
+	"Aurora/internal/apps/geteway/svc"
 	"github.com/gin-gonic/gin"
 	"net/http/pprof"
 )
 
-func RegisterDebugRoute(router *gin.Engine) {
+func RegisterDebugRoute(ctx *svc.ServerCtx, router *gin.Engine) {
 	debug := router.Group("/debug")
 	{
 		debug.GET("/", gin.WrapF(pprof.Index))
