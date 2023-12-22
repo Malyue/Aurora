@@ -1,44 +1,50 @@
 package user
 
 import (
+	"context"
+	"net"
+
+	"google.golang.org/grpc"
+
 	userpb "Aurora/api/proto-go/user"
 	"Aurora/internal/apps/user/service"
+	"Aurora/internal/apps/user/svc"
 	discovery "Aurora/internal/pkg/etcd"
+	_log "Aurora/internal/pkg/log"
+	_mysql "Aurora/internal/pkg/mysql"
+	_redis "Aurora/internal/pkg/redis"
 	_config "Aurora/internal/tools/config"
-	"google.golang.org/grpc"
-	"net"
 )
 
 type Config struct {
 	_config.BaseConfig `yaml:",inline"`
 	//Services _config.GrpcMap `yaml:"services"`
-	Etcd _config.Etcd `yaml:"etcd"`
+	Etcd  _config.Etcd  `yaml:"etcd"`
+	Log   _log.Config   `yaml:"log"`
+	Mysql _mysql.Config `yaml:"mysql"`
+	Redis _redis.Config `yaml:"redis"`
 }
 
 type Server struct {
-	Cfg Config
-	//UserServer userpb.UserServiceServer
+	Cfg        Config
+	Addr       string
+	UserServer *grpc.Server
+	SvcCtx     *svc.ServerCtx
 }
 
 func (s *Server) Run() error {
-	//grpcAddr := s.Cfg.Services[_const.UserServiceName].Addr[0]
-	addr := s.Cfg.Host + ":" + s.Cfg.Port
-	// init grpc server
-	grpcServer := grpc.NewServer()
-	userpb.RegisterUserServiceServer(grpcServer, service.GetUserSvc())
-	lis, err := net.Listen("tcp", addr)
+	lis, err := net.Listen("tcp", s.Addr)
 	if err != nil {
 		return err
 	}
 
-	// init etcd
-	// TODO add logger instance
-	etcdRegister := discovery.NewRegister([]string{s.Cfg.Etcd.Address}, nil)
+	// register in etcd
+	etcdRegister := discovery.NewRegister([]string{s.Cfg.Etcd.Address}, s.SvcCtx.Logger)
 	defer etcdRegister.Stop()
 
 	node := discovery.Server{
 		Name: s.Cfg.Name,
-		Addr: addr,
+		Addr: s.Addr,
 	}
 
 	// register in etcd
@@ -46,9 +52,9 @@ func (s *Server) Run() error {
 		return err
 	}
 
-	// TODO add log output
+	s.SvcCtx.Logger.Info("User Service Start ... ")
 
-	if err := grpcServer.Serve(lis); err != nil {
+	if err := s.UserServer.Serve(lis); err != nil {
 		return err
 	}
 	return nil
@@ -70,8 +76,35 @@ func New(opts ...OptionFunc) (*Server, error) {
 	}
 
 	// init log
+	logger := _log.InitLogger(&s.Cfg.Log)
 
-	// init grpcServer
+	s.SvcCtx = &svc.ServerCtx{
+		Ctx:    context.Background(),
+		Logger: logger,
+	}
+
+	// init grpc server
+	s.Addr = s.Cfg.Host + ":" + s.Cfg.Port
+	grpcServer := grpc.NewServer()
+	userpb.RegisterUserServiceServer(grpcServer, service.GetUserSvc())
+
+	// init mysql conn
+	s.SvcCtx.DBClient, err = _mysql.NewMysql(&s.Cfg.Mysql)
+	if err != nil {
+		s.SvcCtx.Logger.Error("init db error")
+		return nil, err
+	}
+
+	// init redis cli
+	s.SvcCtx.RedisCli, err = _redis.NewRedis(&s.Cfg.Redis)
+	if err != nil {
+		s.SvcCtx.Logger.Error("init redis error")
+		return nil, err
+	}
+
+	s.SvcCtx.Cache = make(map[string]svc.Item)
+
+	s.SvcCtx.Logger.Info("User Service Init...")
 
 	return s, nil
 }

@@ -1,6 +1,7 @@
 package model
 
 import (
+	"Aurora/internal/apps/geteway/svc"
 	"gorm.io/gorm"
 	"time"
 )
@@ -20,16 +21,20 @@ type User struct {
 	UpdatedAt time.Time
 }
 
+func (u *User) InsertUser(svcCtx svc.ServerCtx) {
+
+}
+
 // BeforeCreate 在插入记录之前调用，设置创建时间和更新时间
-func (user *User) BeforeCreate(tx *gorm.DB) error {
+func (u *User) BeforeCreate(tx *gorm.DB) error {
 	now := time.Now()
-	user.CreatedAt = now
-	user.UpdatedAt = now
+	u.CreatedAt = now
+	u.UpdatedAt = now
 	return nil
 }
 
 // BeforeUpdate 在更新记录之前调用，设置更新时间
-func (user *User) BeforeUpdate(tx *gorm.DB) error {
-	user.UpdatedAt = time.Now()
+func (u *User) BeforeUpdate(tx *gorm.DB) error {
+	u.UpdatedAt = time.Now()
 	return nil
 }

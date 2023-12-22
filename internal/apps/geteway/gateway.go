@@ -18,10 +18,10 @@ import (
 
 type Config struct {
 	_config.BaseConfig `yaml:",inline"`
-	Services           _config.GrpcMap `yaml:"services"`
-	Etcd               _config.Etcd    `yaml:"etcd"`
-	Jwt                jwt.Config      `yaml:"jwt"`
-	Log                _log.Config     `yaml:"log"`
+	//Services           _config.GrpcMap `yaml:"services"`
+	Etcd _config.Etcd `yaml:"etcd"`
+	Jwt  jwt.Config   `yaml:"jwt"`
+	Log  _log.Config  `yaml:"log"`
 	//Redis              _redis
 }
 
@@ -79,6 +79,8 @@ func New(opts ...OptionFunc) (*Server, error) {
 
 	// init router
 	r := router.InitRouter(ctx)
+
+	logger.Info("Gateway init...")
 
 	return &Server{
 		opts:      o,

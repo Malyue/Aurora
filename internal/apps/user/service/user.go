@@ -6,23 +6,45 @@ import (
 	"sync"
 )
 
-var UserSvcOnce sync.Once
-var UserSvcInstance *UserSvc
+var UserServerOnce sync.Once
+var UserServerInstance *UserServer
 
-type UserSvc struct {
+type UserServer struct {
 	userpb.UnimplementedUserServiceServer
 }
 
-func GetUserSvc() *UserSvc {
-	UserSvcOnce.Do(func() {
-		UserSvcInstance = &UserSvc{}
+var _ userpb.UserServiceServer = (*UserServer)(nil)
+
+func GetUserServer() *UserServer {
+	UserServerOnce.Do(func() {
+		UserServerInstance = &UserServer{}
 	})
-	return UserSvcInstance
+	return UserServerInstance
 }
 
-func (s *UserSvc) Hello(ctx context.Context, req *userpb.HelloRequest) (resp *userpb.HelloResponse, err error) {
+func (s *UserServer) Hello(ctx context.Context, req *userpb.HelloRequest) (resp *userpb.HelloResponse, err error) {
 	resp = &userpb.HelloResponse{
 		Msg: "hello",
 	}
 	return
+}
+
+func (s *UserServer) CreateUser(ctx context.Context, req *userpb.CreateUserRequest) (resp *userpb.CreateUserResponse, err error) {
+	return nil, err
+}
+
+func (s *UserServer) VerifyUser(ctx context.Context, req *userpb.VerifyUserRequest) (resp *userpb.VerifyUserResponse, err error) {
+	return nil, err
+}
+
+func (s *UserServer) UpdateUserInfo(ctx context.Context, req *userpb.UpdateUserInfoRequest) (resp *userpb.UpdateUserInfoResponse, err error) {
+	return nil, err
+}
+
+func (s *UserServer) GetUserInfo(ctx context.Context, req *userpb.GetUserInfoRequest) (resp *userpb.GetUserInfoResponse, err error) {
+	return nil, err
+}
+
+func (s *UserServer) SearchUser(ctx context.Context, req *userpb.SearchUserRequest) (resp *userpb.SearchUserRequest, err error) {
+	return nil, err
 }

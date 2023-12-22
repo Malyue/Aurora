@@ -11,9 +11,9 @@ import (
 )
 
 type Config struct {
-	LogPath     string `yaml:"log_path"`
+	LogPath     string `yaml:"logPath"`
 	Mode        string `yaml:"mode"`
-	ServiceName string `yaml:"service_name"`
+	ServiceName string `yaml:"serviceName"`
 }
 
 const (
