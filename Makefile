@@ -1,7 +1,13 @@
+PROTO_PATH ?= api/proto
+
 init: tidy proto
 
+run:
+
+build:
+
 proto:
-	cd api/protobuf/ && make gen
+	cd "${PROTO_PATH}" && make gen
 
 tidy:
 	go mod tidy

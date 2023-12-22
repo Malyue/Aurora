@@ -17,6 +17,7 @@ const (
 	CodeServerBusy ResCode = 500 + iota
 	CodeInvalidParam
 	CodeErrAuth
+	CodeTokenExpire
 )
 
 var codeMsgMap = map[ResCode]string{
@@ -26,6 +27,7 @@ var codeMsgMap = map[ResCode]string{
 	CodeInvalidParam:   "请求参数错误",
 	CodeNotAllowMethod: "方法不允许",
 	CodeErrAuth:        "权限不足",
+	CodeTokenExpire:    "token过期",
 }
 
 func (r ResCode) Msg() string {

@@ -1,0 +1,110 @@
+syntax = "proto3";
+
+package user;
+option go_package = "proto-go/user";
+
+import "google/protobuf/timestamp.proto";
+
+message HelloRequest {
+}
+
+message HelloResponse{
+  string msg = 1;
+}
+
+message BasicUser {
+  string id =1;
+  string account = 2;
+  string username = 3;
+  string password = 4;
+  string avatar = 5;
+  int64 gender = 6;
+  string mobile = 7;
+  string email = 8;
+  string introduce = 9;
+  int64 ssRobot = 10;
+  int64 status = 11;
+  google.protobuf.Timestamp createTime = 12;
+  google.protobuf.Timestamp updateTime = 13;
+}
+
+message ResponseUser {
+  string id = 1;
+  string account = 2;
+  string username = 3;
+  string avatar = 4;
+  int64 gender = 5;
+  string mobile = 6;
+  string email = 7;
+  string introduce = 8;
+  int64 isRobot = 9;
+  int64 status = 10;
+  google.protobuf.Timestamp createTime = 11;
+  google.protobuf.Timestamp updateTime = 12;
+}
+
+message CreateUserRequest {
+  string username = 1;
+  string account = 2;
+  string password = 3;
+  string avatar = 4;
+  int64 gender = 5;
+  string mobile = 6;
+  string email = 7;
+  string introduce = 8;
+  int64 ssRobot = 9;
+}
+
+message CreateUserResponse{
+  BasicUser User = 2;
+}
+
+message UpdateUserInfoRequest {
+  string id = 1;
+  string username = 2;
+  string password = 3;
+
+}
+
+message UpdateUserInfoResponse{
+
+}
+
+message VerifyUserRequest{
+  string id = 1;
+  string account = 2;
+  string password = 3;
+}
+
+message VerifyUserResponse{
+  bool verify = 1;
+  string msg = 2;
+}
+
+message GetUserInfoRequest {
+  string id = 1;
+}
+
+message GetUserInfoResponse{
+  ResponseUser user = 1;
+}
+
+message SearchUserRequest{
+  repeated string account = 1;
+  repeated string username = 2;
+  repeated string mobile = 3;
+  repeated string email = 4;
+}
+
+message SearchUserResponse{
+  repeated ResponseUser users = 1;
+}
+
+service UserService {
+  rpc Hello(HelloRequest) returns (HelloResponse) {}
+  rpc CreateUser(CreateUserRequest) returns(CreateUserResponse){}
+  rpc VerifyUser(VerifyUserRequest) returns(VerifyUserResponse){}
+  rpc UpdateUserInfo(UpdateUserInfoRequest) returns(UpdateUserInfoResponse){}
+  rpc GetUserInfo(GetUserInfoRequest) returns(GetUserInfoResponse) {}
+  rpc SearchUser(SearchUserRequest) returns(SearchUserRequest) {}
+}

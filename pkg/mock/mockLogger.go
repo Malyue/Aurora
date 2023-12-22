@@ -1,1 +1,4 @@
-package mockg
+package mock
+
+type MockLogger struct {
+}

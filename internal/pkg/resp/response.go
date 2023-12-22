@@ -21,10 +21,9 @@ func ResponseError(c *gin.Context, code errorx.ResCode) {
 	})
 }
 
-func ResponseSuccess(c *gin.Context, code errorx.ResCode, data interface{}) {
+func ResponseSuccess(c *gin.Context, data interface{}) {
 	c.JSON(http.StatusOK, &ResponseCode{
-		Code: code,
-		Msg:  code.Msg(),
+		Code: errorx.CodeSuccess,
 		Data: data,
 	})
 }

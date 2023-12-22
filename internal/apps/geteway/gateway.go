@@ -1,21 +1,28 @@
 package geteway
 
 import (
+	"fmt"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"google.golang.org/grpc/resolver"
+
 	"Aurora/internal/apps/geteway/router"
 	"Aurora/internal/apps/geteway/svc"
 	discovery "Aurora/internal/pkg/etcd"
 	_grpc "Aurora/internal/pkg/grpc"
+	"Aurora/internal/pkg/jwt"
+	_log "Aurora/internal/pkg/log"
 	_config "Aurora/internal/tools/config"
-	"fmt"
-	"github.com/gin-gonic/gin"
-	"google.golang.org/grpc/resolver"
-	"net/http"
 )
 
 type Config struct {
 	_config.BaseConfig `yaml:",inline"`
 	Services           _config.GrpcMap `yaml:"services"`
 	Etcd               _config.Etcd    `yaml:"etcd"`
+	Jwt                jwt.Config      `yaml:"jwt"`
+	Log                _log.Config     `yaml:"log"`
+	//Redis              _redis
 }
 
 type Server struct {
@@ -34,7 +41,7 @@ func (s *Server) Run() error {
 
 	return srv.ListenAndServe()
 
-	// TODO signal
+	// TODO set signal to quit
 
 }
 
@@ -51,17 +58,24 @@ func New(opts ...OptionFunc) (*Server, error) {
 		return nil, err
 	}
 
-	// TODO init log
+	logger := _log.InitLogger(&cfg.Log)
 
-	// TODO add log instance
-	register := discovery.NewResolver([]string{cfg.Etcd.Address}, nil)
-	resolver.Register(register)
-	defer register.Close()
-	userService := _grpc.InitUserClient()
+	// set etcd resolver
+	etcdResolver := discovery.NewResolver([]string{cfg.Etcd.Address}, logger)
+	resolver.Register(etcdResolver)
+	defer etcdResolver.Close()
 
+	// init Client
+	userServer := _grpc.InitUserClient()
+
+	// create svc ctx
 	ctx := &svc.ServerCtx{
-		UserServer: userService,
+		UserServer: userServer,
+		Logger:     logger,
 	}
+
+	// init jwt config
+	jwt.InitJWTConfig(&cfg.Jwt)
 
 	// init router
 	r := router.InitRouter(ctx)
@@ -72,8 +86,4 @@ func New(opts ...OptionFunc) (*Server, error) {
 		Router:    r,
 		ServerCtx: ctx,
 	}, nil
-}
-
-func init() {
-
 }
