@@ -80,6 +80,7 @@ message VerifyUserRequest{
 message VerifyUserResponse{
   bool verify = 1;
   string msg = 2;
+  ResponseUser user = 3;
 }
 
 message GetUserInfoRequest {

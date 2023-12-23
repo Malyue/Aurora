@@ -20,14 +20,21 @@ const (
 	CodeTokenExpire
 )
 
+const (
+	CodeErrPassword ResCode = 1000 + iota
+	CodeRepeatedAccount
+)
+
 var codeMsgMap = map[ResCode]string{
-	CodeSuccess:        "成功",
-	CodeHasNoRoute:     "路由不存在",
-	CodeServerBusy:     "服务繁忙",
-	CodeInvalidParam:   "请求参数错误",
-	CodeNotAllowMethod: "方法不允许",
-	CodeErrAuth:        "权限不足",
-	CodeTokenExpire:    "token过期",
+	CodeSuccess:         "成功",
+	CodeHasNoRoute:      "路由不存在",
+	CodeServerBusy:      "服务繁忙",
+	CodeInvalidParam:    "请求参数错误",
+	CodeNotAllowMethod:  "方法不允许",
+	CodeErrAuth:         "权限不足",
+	CodeTokenExpire:     "token过期",
+	CodeErrPassword:     "密码错误",
+	CodeRepeatedAccount: "账号重复",
 }
 
 func (r ResCode) Msg() string {
