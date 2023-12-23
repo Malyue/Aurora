@@ -56,7 +56,8 @@ message CreateUserRequest {
 }
 
 message CreateUserResponse{
-  BasicUser User = 2;
+  BasicUser User = 1;
+  bool success = 2;
 }
 
 message UpdateUserInfoRequest {

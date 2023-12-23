@@ -1,13 +1,13 @@
 package user
 
 import (
+	userpb "Aurora/api/proto-go/user"
+	"Aurora/internal/apps/user/service"
 	"context"
 	"net"
 
 	"google.golang.org/grpc"
 
-	userpb "Aurora/api/proto-go/user"
-	"Aurora/internal/apps/user/service"
 	"Aurora/internal/apps/user/svc"
 	discovery "Aurora/internal/pkg/etcd"
 	_log "Aurora/internal/pkg/log"
@@ -83,11 +83,6 @@ func New(opts ...OptionFunc) (*Server, error) {
 		Logger: logger,
 	}
 
-	// init grpc server
-	s.Addr = s.Cfg.Host + ":" + s.Cfg.Port
-	grpcServer := grpc.NewServer()
-	userpb.RegisterUserServiceServer(grpcServer, service.GetUserSvc())
-
 	// init mysql conn
 	s.SvcCtx.DBClient, err = _mysql.NewMysql(&s.Cfg.Mysql)
 	if err != nil {
@@ -103,6 +98,11 @@ func New(opts ...OptionFunc) (*Server, error) {
 	}
 
 	s.SvcCtx.Cache = make(map[string]svc.Item)
+
+	// init grpc server
+	s.Addr = s.Cfg.Host + ":" + s.Cfg.Port
+	grpcServer := grpc.NewServer()
+	userpb.RegisterUserServiceServer(grpcServer, service.NewUserServer(s.SvcCtx))
 
 	s.SvcCtx.Logger.Info("User Service Init...")
 

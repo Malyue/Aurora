@@ -9,7 +9,7 @@ CREATE TABLE `user` (
     `email` varchar(30) NOT NULL DEFAULT '' COMMENT '用户邮箱',
     `introduce` varchar(255) NOT NULL DEFAULT '' COMMENT '用户个人介绍',
     `is_robot`   tinyint(4) unsigned NOT NULL DEFAULT '0' COMMENT '是否机器人[0:否;1:是;]',
-    `status` tinyint(3) unsigned NOT NULL DEFAULT '1' COMMENT '状态: 1:正常 2:停用',
+    `status` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT '状态: 0:正常 1:停用',
     `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
     `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
     PRIMARY KEY (`id`) USING BTREE,
