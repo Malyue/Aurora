@@ -9,6 +9,7 @@ require (
 	github.com/go-eden/routine v1.0.2
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang-module/carbon v1.7.3
+	github.com/gorilla/websocket v1.5.1
 	github.com/juju/ratelimit v1.0.2
 	github.com/shopspring/decimal v1.3.1
 	github.com/sirupsen/logrus v1.9.3

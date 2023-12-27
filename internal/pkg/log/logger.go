@@ -48,6 +48,7 @@ func InitLogger(cfg *Config) *logrus.Logger {
 	} else if cfg.Mode == _const.PRODUCTION {
 		logger.SetOutput(io.MultiWriter(os.Stdout, file))
 		logger.SetLevel(logrus.ErrorLevel)
+		logrus.SetOutput(io.MultiWriter(os.Stdout, file))
 	}
 	logger.SetReportCaller(true)
 	logger.SetFormatter(&LogFormatter{})
