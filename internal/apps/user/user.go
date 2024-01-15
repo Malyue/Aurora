@@ -99,7 +99,7 @@ func New(opts ...OptionFunc) (*Server, error) {
 
 	s.SvcCtx.Cache = make(map[string]svc.Item)
 
-	// init grpc server
+	// init grpc internal
 	s.Addr = s.Cfg.Host + ":" + s.Cfg.Port
 	grpcServer := grpc.NewServer()
 	userpb.RegisterUserServiceServer(grpcServer, service.NewUserServer(s.SvcCtx))

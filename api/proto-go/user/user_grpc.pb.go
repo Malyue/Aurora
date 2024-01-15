@@ -101,7 +101,7 @@ func (c *userServiceClient) SearchUser(ctx context.Context, in *SearchUserReques
 	return out, nil
 }
 
-// UserServiceServer is the server API for UserService service.
+// UserServiceServer is the internal API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility
 type UserServiceServer interface {

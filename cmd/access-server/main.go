@@ -1,11 +1,11 @@
 package main
 
 import (
-	_gateway "Aurora/internal/apps/gateway"
+	_access "Aurora/internal/apps/access-server"
 	"path/filepath"
 )
 
-const config = "cmd/gateway/config.yaml"
+const config = "cmd/access-server/config.yaml"
 
 func main() {
 	dir, err := filepath.Abs(filepath.Dir("."))
@@ -15,8 +15,8 @@ func main() {
 
 	filePath := filepath.Join(dir, config)
 
-	server, err := _gateway.New(
-		_gateway.WithConfig(filePath))
+	server, err := _access.New(
+		_access.WithConfig(filePath))
 	if err != nil {
 		panic(err)
 	}

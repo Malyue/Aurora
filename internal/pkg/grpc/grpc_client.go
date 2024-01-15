@@ -10,20 +10,18 @@ import (
 
 var UserServiceClient userpb.UserServiceClient
 
-func InitUserClient() userpb.UserServiceClient {
-	conn := initClient(_const.UserServiceName)
+func InitUserClient() (userpb.UserServiceClient, error) {
+	conn, err := initClient(_const.UserServiceName)
+	if err != nil {
+		return nil, err
+	}
 	UserServiceClient = userpb.NewUserServiceClient(conn)
-	return UserServiceClient
+	return UserServiceClient, nil
 }
 
-func initClient(name string) *grpc.ClientConn {
+func initClient(name string) (*grpc.ClientConn, error) {
 	target := fmt.Sprintf("etcd:///%s", name)
 
 	conn, err := grpc.Dial(target, grpc.WithTransportCredentials(insecure.NewCredentials()))
-
-	if err != nil {
-		panic(err)
-	}
-
-	return conn
+	return conn, err
 }

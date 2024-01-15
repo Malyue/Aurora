@@ -16,7 +16,7 @@ type Config struct {
 }
 
 func NewMysql(cfg *Config) (*gorm.DB, error) {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		cfg.Username,
 		cfg.Password,
 		cfg.Host,
@@ -29,4 +29,9 @@ func NewMysql(cfg *Config) (*gorm.DB, error) {
 	}
 
 	return conn, nil
+}
+
+// TODO get tx
+func Tx() {
+
 }
