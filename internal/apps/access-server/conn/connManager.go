@@ -1,7 +1,6 @@
 package conn
 
 import (
-	"Aurora/internal/apps/access-server/svc"
 	"github.com/gorilla/websocket"
 	"sync"
 )
@@ -11,14 +10,14 @@ type ConnManager struct {
 	//ConnMap     map[*websocket.Conn]struct{}
 	ConnMap map[string]*websocket.Conn
 	sync.RWMutex
-	*svc.ServerCtx
+	//*svc.ServerCtx
 }
 
-func NewConnManager(s *svc.ServerCtx) *ConnManager {
+func NewConnManager() *ConnManager {
 	return &ConnManager{
 		//UserConnMap: make(map[string][]int64),
-		ConnMap:   make(map[string]*websocket.Conn),
-		ServerCtx: s,
+		ConnMap: make(map[string]*websocket.Conn),
+		//ServerCtx: s,
 	}
 }
 

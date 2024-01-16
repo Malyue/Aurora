@@ -1,6 +1,7 @@
 package service
 
 import (
+	"Aurora/internal/pkg/jwt"
 	"context"
 	"sync"
 
@@ -104,6 +105,30 @@ func (s *UserServer) GetUserInfo(ctx context.Context, req *userpb.GetUserInfoReq
 	return nil, err
 }
 
-func (s *UserServer) SearchUser(ctx context.Context, req *userpb.SearchUserRequest) (resp *userpb.SearchUserRequest, err error) {
+func (s *UserServer) SearchUser(ctx context.Context, req *userpb.SearchUserRequest) (resp *userpb.SearchUserResponse, err error) {
 	return nil, err
+}
+
+func (s *UserServer) VerifyToken(ctx context.Context, req *userpb.VerifyTokenRequest) (resp *userpb.VerifyTokenResponse, err error) {
+	claims, expire, err := jwt.ParseTokenAndValidExpire(req.Token)
+	if err != nil {
+		return nil, err
+	}
+
+	return &userpb.VerifyTokenResponse{
+		Id:     claims.Id,
+		Expire: expire,
+	}, nil
+}
+
+func (s *UserServer) RefreshToken(ctx context.Context, req *userpb.RefreshTokenRequest) (resp *userpb.RefreshTokenResponse, err error) {
+	accessToken, refreshToken, err := jwt.ParseRefreshToken(req.RefreshToken)
+	if err != nil {
+		return nil, err
+	}
+
+	return &userpb.RefreshTokenResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
 }

@@ -24,14 +24,16 @@ const (
 )
 
 type Message struct {
-	MessageID   int64
-	MsgType     MsgType
+	MessageID int64
+	// MsgType ack/auth/broadcast/group/person
+	MsgType MsgType
+	// ContentType text/file/video/sound
 	ContentType ConntentType
 	ReceiverID  []string
 	GroupID     []string
 	Subscribers []string
-	Payload     []byte
-	AuthMessage
+	// Payload content
+	Payload []byte
 
 	// -------- queue --------
 	private    int64
@@ -40,6 +42,7 @@ type Message struct {
 }
 
 type AuthMessage struct {
+	ID    int64
 	Token string
 }
 
@@ -57,7 +60,7 @@ func MessageBroadcast() {
 
 }
 
-func MessageAuth(data []byte) (*Message, error) {
+func GetAuthMessage(data []byte) (*AuthMessage, error) {
 	msg := Message{}
 	err := json.Unmarshal(data, &msg)
 	if err != nil {
@@ -66,5 +69,11 @@ func MessageAuth(data []byte) (*Message, error) {
 	if msg.MsgType != Auth {
 		return nil, errors.New("the msg is not auth")
 	}
-	return &msg, err
+
+	authMessage := &AuthMessage{
+		ID:    msg.MessageID,
+		Token: string(msg.Payload),
+	}
+
+	return authMessage, err
 }

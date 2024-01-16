@@ -1,14 +1,21 @@
 package access_server
 
 import (
-	"Aurora/internal/apps/access-server/server"
+	userpb "Aurora/api/proto-go/user"
+	"Aurora/internal/apps/access-server/conn"
+	discovery "Aurora/internal/pkg/etcd"
+	_grpc "Aurora/internal/pkg/grpc"
+	_log "Aurora/internal/pkg/log"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/resolver"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
 
-	"Aurora/internal/apps/access-server/internal/conn"
+	_conn "Aurora/internal/apps/access-server/conn"
+	_pkg "Aurora/internal/apps/access-server/pkg/snowflake"
 	"Aurora/internal/apps/access-server/svc"
 	_config "Aurora/internal/tools/config"
 )
@@ -22,10 +29,13 @@ type stats struct {
 }
 
 type Config struct {
-	NodeId string `json:"nodeId"`
-	Name   string `json:"name"`
-	Host   string `json:"host"`
-	Port   string `json:"port"`
+	NodeId string       `json:"nodeId"`
+	Name   string       `json:"name"`
+	Host   string       `json:"host"`
+	Port   string       `json:"port"`
+	WorkID int64        `json:"workId"`
+	Etcd   _config.Etcd `yaml:"etcd"`
+	Log    _log.Config  `yaml:"log"`
 	//Address string
 	// redis -- to get the conn situation
 	//RedisConf redis.Config
@@ -33,14 +43,19 @@ type Config struct {
 
 type Server struct {
 	stats
-	opts            *Options
+	//opts            *Options
 	Config          Config
 	start           time.Time
 	connManager     *conn.ConnManager
 	svcCtx          *svc.ServerCtx
 	ipBlackList     map[string]uint64
 	ipBlackListLock sync.RWMutex
+
+	NodeSnowFlake *_pkg.Worker
 	// Node Manager select a node to send msg
+
+	// grpc client
+	UserServer userpb.UserServiceClient
 }
 
 func New(opts ...OptionFunc) (*Server, error) {
@@ -60,12 +75,42 @@ func New(opts ...OptionFunc) (*Server, error) {
 		cfg.NodeId = id.String()
 	}
 
-	return &Server{}, nil
+	logger := _log.InitLogger(&cfg.Log)
+	// init snowflake
+	snowflakeWorker, err := _pkg.NewWorker(cfg.WorkID)
+	if err != nil {
+		return nil, err
+	}
+
+	// init connManager
+	connManager := _conn.NewConnManager()
+
+	// TODO init timingWheel
+
+	// TODO init redis
+
+	// add grpc client
+	etcdResolver := discovery.NewResolver([]string{cfg.Etcd.Address}, logger)
+	resolver.Register(etcdResolver)
+	defer etcdResolver.Close()
+
+	userServer, err := _grpc.InitUserClient()
+	if err != nil {
+		logrus.Errorf("create user client err : %s", err)
+	}
+
+	return &Server{
+		Config:        cfg,
+		NodeSnowFlake: snowflakeWorker,
+		start:         time.Now(),
+		connManager:   connManager,
+		UserServer:    userServer,
+	}, nil
 }
 
 func (s *Server) Run() error {
 	// start server to get
-	server.StartWSServer(s.Config.Host + ":" + s.Config.Port)
+	s.StartWSServer()
 
 	return nil
 }

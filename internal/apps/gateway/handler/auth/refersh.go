@@ -1,6 +1,7 @@
 package auth
 
 import (
+	userpb "Aurora/api/proto-go/user"
 	"Aurora/internal/apps/gateway/define/auth"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -8,7 +9,6 @@ import (
 	"Aurora/internal/apps/gateway/svc"
 	_const "Aurora/internal/pkg/const"
 	"Aurora/internal/pkg/errorx"
-	"Aurora/internal/pkg/jwt"
 	"Aurora/internal/pkg/resp"
 )
 
@@ -19,8 +19,12 @@ func RefreshToken(svcCtx *svc.ServerCtx) gin.HandlerFunc {
 		// get refreshToken
 		token := ctx.GetHeader(_const.RefreshToken)
 
-		// parse token
-		accessToken, refreshToken, err := jwt.ParseRefreshToken(token)
+		refreshRequest := &userpb.RefreshTokenRequest{
+			RefreshToken: token,
+		}
+
+		refreshResp, err := svcCtx.UserServer.RefreshToken(ctx, refreshRequest)
+
 		if err != nil {
 			resp.ResponseError(ctx, errorx.CodeErrAuth)
 			logrus.Error(_const.GateWay, err)
@@ -28,8 +32,8 @@ func RefreshToken(svcCtx *svc.ServerCtx) gin.HandlerFunc {
 		}
 
 		resp.ResponseSuccess(ctx, &auth.AuthResponse{
-			AccessToken:  accessToken,
-			RefreshToken: refreshToken,
+			AccessToken:  refreshResp.AccessToken,
+			RefreshToken: refreshResp.RefreshToken,
 		})
 	}
 }

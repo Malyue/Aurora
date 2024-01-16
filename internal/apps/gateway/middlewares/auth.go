@@ -1,16 +1,17 @@
 package middleware
 
 import (
+	userpb "Aurora/api/proto-go/user"
+	"Aurora/internal/apps/gateway/svc"
 	_const "Aurora/internal/pkg/const"
 	"Aurora/internal/pkg/errorx"
-	"Aurora/internal/pkg/jwt"
 	"Aurora/internal/pkg/resp"
 	"github.com/gin-gonic/gin"
 	"strings"
 )
 
 // AuthMiddleware auth
-func AuthMiddleware() gin.HandlerFunc {
+func AuthMiddleware(svcCtx *svc.ServerCtx) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.GetHeader("Authorization")
 		headerList := strings.Split(header, " ")
@@ -28,20 +29,22 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		claims, expire, err := jwt.ParseTokenAndValidExpire(token)
+		verifyTokenResp, err := svcCtx.UserServer.VerifyToken(c, &userpb.VerifyTokenRequest{
+			Token: token,
+		})
 		if err != nil {
 			resp.ResponseError(c, errorx.CodeErrAuth)
 			c.Abort()
 			return
 		}
 
-		if expire {
+		if verifyTokenResp.Expire {
 			resp.ResponseError(c, errorx.CodeTokenExpire)
 			c.Abort()
 			return
 		}
 		// set id in ctx
-		c.Set(_const.UserIDCtx, claims.Id)
+		c.Set(_const.UserIDCtx, verifyTokenResp.Id)
 		c.Next()
 	}
 }

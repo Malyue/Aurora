@@ -3,6 +3,7 @@ package user
 import (
 	userpb "Aurora/api/proto-go/user"
 	"Aurora/internal/apps/user/service"
+	"Aurora/internal/pkg/jwt"
 	"context"
 	"net"
 
@@ -23,6 +24,7 @@ type Config struct {
 	Log   _log.Config   `yaml:"log"`
 	Mysql _mysql.Config `yaml:"mysql"`
 	Redis _redis.Config `yaml:"redis"`
+	Jwt   jwt.Config    `yaml:"jwt"`
 }
 
 type Server struct {
@@ -51,6 +53,9 @@ func (s *Server) Run() error {
 	if _, err := etcdRegister.Register(node, 10); err != nil {
 		return err
 	}
+
+	// init jwt config
+	jwt.InitJWTConfig(&s.Cfg.Jwt)
 
 	s.SvcCtx.Logger.Info("User Service Start ... ")
 

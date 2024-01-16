@@ -102,11 +102,31 @@ message SearchUserResponse{
   repeated ResponseUser users = 1;
 }
 
+message VerifyTokenRequest {
+  string token = 1;
+}
+
+message VerifyTokenResponse{
+  string id = 1;
+  bool expire = 2;
+}
+
+message RefreshTokenRequest {
+  string refreshToken = 1;
+}
+
+message RefreshTokenResponse{
+  string accessToken = 1;
+  string refreshToken = 2;
+}
+
 service UserService {
   rpc Hello(HelloRequest) returns (HelloResponse) {}
   rpc CreateUser(CreateUserRequest) returns(CreateUserResponse){}
   rpc VerifyUser(VerifyUserRequest) returns(VerifyUserResponse){}
   rpc UpdateUserInfo(UpdateUserInfoRequest) returns(UpdateUserInfoResponse){}
   rpc GetUserInfo(GetUserInfoRequest) returns(GetUserInfoResponse) {}
-  rpc SearchUser(SearchUserRequest) returns(SearchUserRequest) {}
+  rpc SearchUser(SearchUserRequest) returns(SearchUserResponse) {}
+  rpc VerifyToken(VerifyTokenRequest) returns(VerifyTokenResponse) {}
+  rpc RefreshToken(RefreshTokenRequest) returns(RefreshTokenResponse){}
 }

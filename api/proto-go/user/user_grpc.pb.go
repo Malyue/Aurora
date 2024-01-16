@@ -25,6 +25,8 @@ const (
 	UserService_UpdateUserInfo_FullMethodName = "/user.UserService/UpdateUserInfo"
 	UserService_GetUserInfo_FullMethodName    = "/user.UserService/GetUserInfo"
 	UserService_SearchUser_FullMethodName     = "/user.UserService/SearchUser"
+	UserService_VerifyToken_FullMethodName    = "/user.UserService/VerifyToken"
+	UserService_RefreshToken_FullMethodName   = "/user.UserService/RefreshToken"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -36,7 +38,9 @@ type UserServiceClient interface {
 	VerifyUser(ctx context.Context, in *VerifyUserRequest, opts ...grpc.CallOption) (*VerifyUserResponse, error)
 	UpdateUserInfo(ctx context.Context, in *UpdateUserInfoRequest, opts ...grpc.CallOption) (*UpdateUserInfoResponse, error)
 	GetUserInfo(ctx context.Context, in *GetUserInfoRequest, opts ...grpc.CallOption) (*GetUserInfoResponse, error)
-	SearchUser(ctx context.Context, in *SearchUserRequest, opts ...grpc.CallOption) (*SearchUserRequest, error)
+	SearchUser(ctx context.Context, in *SearchUserRequest, opts ...grpc.CallOption) (*SearchUserResponse, error)
+	VerifyToken(ctx context.Context, in *VerifyTokenRequest, opts ...grpc.CallOption) (*VerifyTokenResponse, error)
+	RefreshToken(ctx context.Context, in *RefreshTokenRequest, opts ...grpc.CallOption) (*RefreshTokenResponse, error)
 }
 
 type userServiceClient struct {
@@ -92,8 +96,8 @@ func (c *userServiceClient) GetUserInfo(ctx context.Context, in *GetUserInfoRequ
 	return out, nil
 }
 
-func (c *userServiceClient) SearchUser(ctx context.Context, in *SearchUserRequest, opts ...grpc.CallOption) (*SearchUserRequest, error) {
-	out := new(SearchUserRequest)
+func (c *userServiceClient) SearchUser(ctx context.Context, in *SearchUserRequest, opts ...grpc.CallOption) (*SearchUserResponse, error) {
+	out := new(SearchUserResponse)
 	err := c.cc.Invoke(ctx, UserService_SearchUser_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -101,7 +105,25 @@ func (c *userServiceClient) SearchUser(ctx context.Context, in *SearchUserReques
 	return out, nil
 }
 
-// UserServiceServer is the internal API for UserService service.
+func (c *userServiceClient) VerifyToken(ctx context.Context, in *VerifyTokenRequest, opts ...grpc.CallOption) (*VerifyTokenResponse, error) {
+	out := new(VerifyTokenResponse)
+	err := c.cc.Invoke(ctx, UserService_VerifyToken_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) RefreshToken(ctx context.Context, in *RefreshTokenRequest, opts ...grpc.CallOption) (*RefreshTokenResponse, error) {
+	out := new(RefreshTokenResponse)
+	err := c.cc.Invoke(ctx, UserService_RefreshToken_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility
 type UserServiceServer interface {
@@ -110,7 +132,9 @@ type UserServiceServer interface {
 	VerifyUser(context.Context, *VerifyUserRequest) (*VerifyUserResponse, error)
 	UpdateUserInfo(context.Context, *UpdateUserInfoRequest) (*UpdateUserInfoResponse, error)
 	GetUserInfo(context.Context, *GetUserInfoRequest) (*GetUserInfoResponse, error)
-	SearchUser(context.Context, *SearchUserRequest) (*SearchUserRequest, error)
+	SearchUser(context.Context, *SearchUserRequest) (*SearchUserResponse, error)
+	VerifyToken(context.Context, *VerifyTokenRequest) (*VerifyTokenResponse, error)
+	RefreshToken(context.Context, *RefreshTokenRequest) (*RefreshTokenResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -133,8 +157,14 @@ func (UnimplementedUserServiceServer) UpdateUserInfo(context.Context, *UpdateUse
 func (UnimplementedUserServiceServer) GetUserInfo(context.Context, *GetUserInfoRequest) (*GetUserInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUserInfo not implemented")
 }
-func (UnimplementedUserServiceServer) SearchUser(context.Context, *SearchUserRequest) (*SearchUserRequest, error) {
+func (UnimplementedUserServiceServer) SearchUser(context.Context, *SearchUserRequest) (*SearchUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchUser not implemented")
+}
+func (UnimplementedUserServiceServer) VerifyToken(context.Context, *VerifyTokenRequest) (*VerifyTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method VerifyToken not implemented")
+}
+func (UnimplementedUserServiceServer) RefreshToken(context.Context, *RefreshTokenRequest) (*RefreshTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RefreshToken not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 
@@ -257,6 +287,42 @@ func _UserService_SearchUser_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_VerifyToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VerifyTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).VerifyToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_VerifyToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).VerifyToken(ctx, req.(*VerifyTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_RefreshToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RefreshTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).RefreshToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_RefreshToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).RefreshToken(ctx, req.(*RefreshTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -287,6 +353,14 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SearchUser",
 			Handler:    _UserService_SearchUser_Handler,
+		},
+		{
+			MethodName: "VerifyToken",
+			Handler:    _UserService_VerifyToken_Handler,
+		},
+		{
+			MethodName: "RefreshToken",
+			Handler:    _UserService_RefreshToken_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

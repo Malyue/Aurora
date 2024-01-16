@@ -3,21 +3,22 @@ package gateway
 import (
 	"Aurora/internal/apps/gateway/router"
 	"Aurora/internal/apps/gateway/svc"
+	discovery "Aurora/internal/pkg/etcd"
 	_grpc "Aurora/internal/pkg/grpc"
-	"Aurora/internal/pkg/jwt"
 	_log "Aurora/internal/pkg/log"
 	_config "Aurora/internal/tools/config"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/resolver"
 )
 
 type Config struct {
 	_config.BaseConfig `yaml:",inline"`
 	//Services           _config.GrpcMap `yaml:"services"`
 	Etcd _config.Etcd `yaml:"etcd"`
-	Jwt  jwt.Config   `yaml:"jwt"`
-	Log  _log.Config  `yaml:"log"`
+	//Jwt  jwt.Config   `yaml:"jwt"`
+	Log _log.Config `yaml:"log"`
 	//Redis              _redis
 }
 
@@ -65,9 +66,9 @@ func New(opts ...OptionFunc) (*Server, error) {
 	logger := _log.InitLogger(&cfg.Log)
 
 	// set etcd resolver
-	//etcdResolver := discovery.NewResolver([]string{cfg.Etcd.Address}, logger)
-	//resolver.Register(etcdResolver)
-	//defer etcdResolver.Close()
+	etcdResolver := discovery.NewResolver([]string{cfg.Etcd.Address}, logger)
+	resolver.Register(etcdResolver)
+	defer etcdResolver.Close()
 
 	logger.Info("Set etcd resolver success")
 	// init Client
@@ -81,9 +82,6 @@ func New(opts ...OptionFunc) (*Server, error) {
 		UserServer: userServer,
 		Logger:     logger,
 	}
-
-	// init jwt config
-	jwt.InitJWTConfig(&cfg.Jwt)
 
 	// init router
 	r := router.InitRouter(ctx)

@@ -78,7 +78,7 @@ func (pq *priorityQueue) PeekAndShift(max int64) (*item, int64) {
 }
 
 type DelayQueue struct {
-	c chan interface{}
+	C chan interface{}
 
 	mu       sync.Mutex
 	pq       priorityQueue
@@ -88,7 +88,7 @@ type DelayQueue struct {
 
 func New(size int) *DelayQueue {
 	return &DelayQueue{
-		c:       make(chan interface{}),
+		C:       make(chan interface{}),
 		pq:      newPriorityQueue(size),
 		wakeupC: make(chan struct{}),
 	}
@@ -138,7 +138,7 @@ func (dq *DelayQueue) Poll(exitC chan struct{}, fn func() int64) {
 					// reset the sleeping state since there's no need to receive from wakeupC
 					if atomic.SwapInt32(&dq.sleeping, 0) == 0 {
 						// a caller of Offer() is being blocked on sending to wakeupC
-						// drain wakeupC to unblock the caller
+						// drain wakeupC to ubblock the caller
 						<-dq.wakeupC
 					}
 					continue
@@ -146,6 +146,11 @@ func (dq *DelayQueue) Poll(exitC chan struct{}, fn func() int64) {
 					goto exit
 				}
 			}
+		}
+		select {
+		case dq.C <- item.Value:
+		case <-exitC:
+			goto exit
 		}
 	}
 exit:
