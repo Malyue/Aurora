@@ -8,7 +8,7 @@ import (
 type ConnManager struct {
 	UserConnMap map[string][]int64
 	//ConnMap     map[*websocket.Conn]struct{}
-	ConnMap map[string]*websocket.Conn
+	ConnMap map[string]*Conn
 	sync.RWMutex
 	//*svc.ServerCtx
 }
@@ -16,12 +16,12 @@ type ConnManager struct {
 func NewConnManager() *ConnManager {
 	return &ConnManager{
 		//UserConnMap: make(map[string][]int64),
-		ConnMap: make(map[string]*websocket.Conn),
+		ConnMap: make(map[string]*Conn),
 		//ServerCtx: s,
 	}
 }
 
-func (c *ConnManager) AddConn(conn *websocket.Conn, id string) {
+func (c *ConnManager) AddConn(conn *Conn, id string) {
 	c.Lock()
 	defer c.Unlock()
 	c.ConnMap[id] = conn

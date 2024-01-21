@@ -1,4 +1,4 @@
-gen: gen-user
+gen: gen-user gen-group
 
 gen-user:
 	protoc --go_out=../  --go-grpc_out=../  ./user/*.proto

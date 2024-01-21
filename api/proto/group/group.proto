@@ -1,3 +1,114 @@
 syntax = "proto3";
 
-package template;
+package group;
+option go_package = "proto-go/group";
+
+message Group {
+  int64 id  = 1;
+  string creatorID = 2;
+  uint32 type = 3;
+  string groupName = 4;
+  string profile = 5;
+  string avatar = 6;
+  uint32 maxNum = 7;
+  uint32 isOvert = 8;
+  uint32 isMute = 9;
+  uint32 isApply = 10;
+  uint32 isAllowInvite = 11;
+}
+
+message GroupMember {
+  int64 id = 1;
+  int64 group_id = 2;
+  string user_id = 3;
+  uint32 role = 4;
+  string user_card = 5;
+  uint32 is_mute = 6;
+  uint32 min_record_id = 7;
+}
+
+message CreateGroupRequest {
+  Group group = 1;
+}
+
+message CreateGroupResponse{
+  Group group = 1;
+}
+
+message UpdateGroupRequest {
+  int64 id = 1;
+  string groupName = 2;
+  string profile = 3;
+  string avatar = 4;
+  uint32 maxNum = 5;
+  uint32 isOvert = 6;
+  uint32 isMute = 7;
+  uint32 isApply = 8;
+  uint32 isAllowInvite = 9;
+}
+
+message UpdateGroupResponse{
+  Group group = 1;
+}
+
+message GetGroupByIdsRequest {
+  repeated int64 ids = 1;
+}
+
+message GetGroupByIdsResponse{
+  repeated Group groups = 1;
+}
+
+message GetGroupByNameRequest {
+  repeated string name = 1;
+}
+
+message GetGroupByNameResponse{
+  repeated Group groups = 1;
+}
+
+message DismissGroupRequest{
+  string token = 1;
+  int64 id = 2;
+}
+
+message DismissGroupResponse{
+  bool isDismiss = 1;
+}
+
+message AddGroupMemberRequest {
+  repeated string user_id = 1;
+  int64 group_id = 2;
+}
+
+message AddGroupMemberResponse{
+
+}
+
+message DeleteGroupMemberRequest {
+  repeated string user_id = 1;
+  int64 group_id = 2;
+}
+
+message DeleteGroupMemberResponse{
+
+}
+
+message UpdateGroupMemberRequest {
+  GroupMember group_member = 1;
+}
+
+message UpdateGroupMemberResponse{
+
+}
+
+service GroupService {
+  rpc CreateGroup(CreateGroupRequest) returns(CreateGroupResponse);
+  rpc UpdateGroup(UpdateGroupRequest) returns(UpdateGroupResponse);
+  rpc GetGroupByIds(GetGroupByIdsRequest) returns(GetGroupByIdsResponse);
+  rpc GetGroupByName(GetGroupByNameRequest) returns(GetGroupByNameResponse);
+  rpc DismissGroup(DismissGroupRequest) returns(DismissGroupResponse);
+  rpc AddGroupMember(AddGroupMemberRequest) returns(AddGroupMemberResponse);
+  rpc DeleteGroupMember(DeleteGroupMemberRequest) returns(DeleteGroupMemberResponse);
+  rpc UpdateGroupMember(UpdateGroupMemberRequest) returns(UpdateGroupMemberResponse);
+}

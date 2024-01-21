@@ -11,10 +11,9 @@ CREATE TABLE `group`
     `is_mute`      tinyint(4) unsigned NOT NULL DEFAULT '0' COMMENT '是否全员禁言 [0:否;1:是;]，提示:不包含群主或管理员',
     `is_apply`     tinyint(4) unsigned NOT NULL DEFAULT '1' COMMENT '是否需要审批[0:否;1:是]',
     `is_allow_invite` tinyint(4) unsigned NOT NULL DEFAULT '1' COMMENT '是否允许邀请[0:否;1:是],不包括群主和管理员',
-    `is_dismiss`   tinyint(4) unsigned NOT NULL DEFAULT '0' COMMENT '是否已解散[0:否;1:是;]',
     `created_at` datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `updated_at` datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `dismissed_at` datetime                                   DEFAULT NULL COMMENT '解散时间',
+    `deleted_at` datetime                                   DEFAULT NULL COMMENT '解散时间',
     PRIMARY KEY (`id`),
     KEY            `idx_created_at` (`created_at`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='用户聊天群';

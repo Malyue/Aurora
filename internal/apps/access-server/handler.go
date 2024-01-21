@@ -4,7 +4,11 @@ import (
 	userpb "Aurora/api/proto-go/user"
 	_conn "Aurora/internal/apps/access-server/conn"
 	"Aurora/internal/apps/access-server/internal/message"
+	_errorx "Aurora/internal/pkg/errorx"
+	_resp "Aurora/internal/pkg/resp"
 	"context"
+	"encoding/json"
+	"github.com/gorilla/websocket"
 	"net/http"
 )
 
@@ -33,14 +37,30 @@ func wsHandler(s *Server) func(w http.ResponseWriter, r *http.Request) {
 		})
 
 		if err != nil {
-
+			msg, _ := json.Marshal(_resp.ResponseCode{
+				Code: _errorx.CodeServerBusy,
+				Msg:  "verify user error",
+				Data: nil,
+			})
+			wsConn.WriteMessage(websocket.TextMessage, msg)
+			wsConn.Close()
+			return
 		}
 
 		if verifyTokenResp.Expire {
-
+			msg, _ := json.Marshal(_resp.ResponseCode{
+				Code: _errorx.CodeTokenExpire,
+				Msg:  _errorx.CodeTokenExpire.Msg(),
+				Data: nil,
+			})
+			wsConn.WriteMessage(websocket.TextMessage, msg)
+			wsConn.Close()
+			return
 		}
 
+		// keep a conn in manager
 		conn := _conn.NewConn(wsConn, verifyTokenResp.Id)
-		_ = conn
+		s.connManager.AddConn(conn, conn.UserId)
+		// TODO set a ack model
 	}
 }

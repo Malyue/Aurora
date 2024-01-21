@@ -63,10 +63,9 @@ func (u *UserDal) InsertUser(user *User) (*User, error) {
 	return user, nil
 }
 
-func (u *UserDal) GetUserById(id string, page *Paging) (*User, error) {
+func (u *UserDal) GetUserById(id string) (*User, error) {
 	user := &User{}
-	limit, offset := VerifyPage(page)
-	err := u.conn.Where("id = ? and status = ?", id, _const.StatusUse).First(user).Limit(limit).Offset(offset).Error
+	err := u.conn.Where("id = ? and status = ?", id, _const.StatusUse).First(user).Error
 	if err != nil {
 		return nil, err
 	}
@@ -108,9 +107,10 @@ func (u *UserDal) GetUserInfoByAccount(account string) (*User, error) {
 	return user, nil
 }
 
-func (u *UserDal) BatchGetUserInfoById(ids []string) ([]User, error) {
+func (u *UserDal) BatchGetUserInfoById(ids []string, page *Paging) ([]User, error) {
 	user := make([]User, 0)
-	err := u.conn.Where("id in ? and status = ?", ids, _const.StatusDelete).Find(user).Error
+	limit, offset := VerifyPage(page)
+	err := u.conn.Where("id in ? and status = ?", ids, _const.StatusDelete).Find(user).Limit(limit).Offset(offset).Error
 	if err != nil {
 		return nil, err
 	}
