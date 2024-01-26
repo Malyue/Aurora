@@ -17,3 +17,7 @@ jobs:
     name: run job
     needs: build
     runs-on: ubuntu-latest
+    steps:
+      - name: echo
+        run: |
+          echo "$VARIABLE"
