@@ -1,0 +1,19 @@
+name: Aurora Actions
+on:
+  push:
+    branches:
+      - master
+jobs:
+  BUILD:
+    name: build job
+    runs-on: ubuntu-latest
+    steps:
+      - name: echo
+        env:
+          VARIABLE: HELLO WORLD!
+        run: |
+          echo "$VARIABLE"
+  RUN:
+    name: run job
+    needs: build
+    runs-on: ubuntu-latest
