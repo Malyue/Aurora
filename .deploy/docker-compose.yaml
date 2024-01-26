@@ -1,0 +1,78 @@
+version: '3.5'
+
+# TODO use k8s.yaml to instead it later
+
+networks:
+  aurora:
+    driver: bridge
+
+services:
+  mysql:
+    image: mysql:5.7
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      TZ: 'Asia/Shanghai'
+    ports:
+      - '3306:3306'
+    volumes:
+      - /apps/mysql/mydir:/mydir
+      - /apps/mysql/datadir:/var/lib/mysql
+      - /apps/mysql/conf/my.cnf:/etc/my.cnf
+      - /apps/mysql/source:/docker-entrypoint-initdb.d
+  redis:
+    container_name: redis
+    image: redis
+    volumes:
+      - ./data:/data
+      - ./config:/usr/local/etc/redis
+      - ./logs:/var/log/redis
+    command: ["redis-server","/usr/local/etc/redis/redis.conf"]
+    ports:
+      - "6379:6379"
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    expose:
+      - 9090
+    networks:
+      - aurora
+  elasticsearch:
+    image: elasticsearch:7.9.3
+    container_name: elasticsearch
+    restart: unless-stopped
+    environment:
+      - 'cluster.name=elasticsearch'
+      - 'discovery.type=single-node'
+      - 'ES-JAVA_OPTS=-Xms512m -Xmx1024m'
+    volumes:
+      - ./plugins:/usr/share/elasticsearch/plugins
+      - ./data:/usr/share/elasticsearch/data
+    ports:
+      - '9200:9200'
+  kibana:
+    image: kibana:7.9.3
+    container_name: kibana
+    restart: unless-stopped
+    volumes:
+      - ./kibana.yml:/usr/share/kibana/config/kibana.yml
+    ports:
+      - '5601:5601'
+    privileged: true
+    networks:
+      - aurora
+
