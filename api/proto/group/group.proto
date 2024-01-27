@@ -37,14 +37,14 @@ message CreateGroupResponse{
 
 message UpdateGroupRequest {
   int64 id = 1;
-  string groupName = 2;
-  string profile = 3;
-  string avatar = 4;
-  uint32 maxNum = 5;
-  uint32 isOvert = 6;
-  uint32 isMute = 7;
-  uint32 isApply = 8;
-  uint32 isAllowInvite = 9;
+  optional string groupName = 2;
+  optional string profile = 3;
+  optional string avatar = 4;
+  optional uint32 maxNum = 5;
+  optional uint32 isOvert = 6;
+  optional uint32 isMute = 7;
+  optional uint32 isApply = 8;
+  optional uint32 isAllowInvite = 9;
 }
 
 message UpdateGroupResponse{

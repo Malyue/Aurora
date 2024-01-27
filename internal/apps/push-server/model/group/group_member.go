@@ -33,7 +33,7 @@ func (gm *GroupMember) TableName() string {
 	return "group_member"
 }
 
-func (client *GroupMemberDal) InsertGroupMember(gm *GroupMember, tx ...*gorm.DB) error {
+func (client *GroupMemberClient) InsertGroupMember(gm *GroupMember, tx ...*gorm.DB) error {
 	session := client.conn
 	if tx != nil {
 		session = tx[0]
@@ -42,7 +42,7 @@ func (client *GroupMemberDal) InsertGroupMember(gm *GroupMember, tx ...*gorm.DB)
 	return session.Create(gm).Error
 }
 
-func (client *GroupMemberDal) GetGroupMemberByGroupId(id int64, tx ...*gorm.DB) ([]GroupMember, error) {
+func (client *GroupMemberClient) GetGroupMemberByGroupId(id int64, tx ...*gorm.DB) ([]GroupMember, error) {
 	session := client.conn
 	if tx != nil {
 		session = tx[0]
@@ -54,7 +54,7 @@ func (client *GroupMemberDal) GetGroupMemberByGroupId(id int64, tx ...*gorm.DB) 
 	return members, err
 }
 
-func (client *GroupMemberDal) GetGroupMembersByUserId(id string, tx ...*gorm.DB) ([]GroupMember, error) {
+func (client *GroupMemberClient) GetGroupMembersByUserId(id string, tx ...*gorm.DB) ([]GroupMember, error) {
 	session := client.conn
 	if tx != nil {
 		session = tx[0]
@@ -65,7 +65,7 @@ func (client *GroupMemberDal) GetGroupMembersByUserId(id string, tx ...*gorm.DB)
 	return members, err
 }
 
-func (client *GroupMemberDal) DeleteGroupMember(id int64, tx ...*gorm.DB) error {
+func (client *GroupMemberClient) DeleteGroupMember(id int64, tx ...*gorm.DB) error {
 	session := client.conn
 	if tx != nil {
 		session = tx[0]
@@ -75,7 +75,7 @@ func (client *GroupMemberDal) DeleteGroupMember(id int64, tx ...*gorm.DB) error 
 	return err
 }
 
-func (client *GroupMemberDal) CountsByGroupID(id int64, tx ...*gorm.DB) (int64, error) {
+func (client *GroupMemberClient) CountsByGroupID(id int64, tx ...*gorm.DB) (int64, error) {
 	session := client.conn
 	if tx != nil {
 		session = tx[0]
@@ -86,7 +86,7 @@ func (client *GroupMemberDal) CountsByGroupID(id int64, tx ...*gorm.DB) (int64, 
 	return count, err
 }
 
-func (client *GroupMemberDal) CountsByUserID(id string, tx ...*gorm.DB) (int64, error) {
+func (client *GroupMemberClient) CountsByUserID(id string, tx ...*gorm.DB) (int64, error) {
 	session := client.conn
 	if tx != nil {
 		session = tx[0]

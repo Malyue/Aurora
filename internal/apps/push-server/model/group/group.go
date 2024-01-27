@@ -48,7 +48,7 @@ func (f Field) String() string {
 	return string(f)
 }
 
-func (client *GroupDal) InsertGroup(g *Group, tx ...*gorm.DB) (*Group, error) {
+func (client *GroupClient) InsertGroup(g *Group, tx ...*gorm.DB) (*Group, error) {
 	session := client.conn
 	if tx != nil {
 		session = tx[0]
@@ -59,7 +59,7 @@ func (client *GroupDal) InsertGroup(g *Group, tx ...*gorm.DB) (*Group, error) {
 	return g, nil
 }
 
-func (client *GroupDal) GetGroupById(id int64, tx ...*gorm.DB) (*Group, error) {
+func (client *GroupClient) GetGroupById(id int64, tx ...*gorm.DB) (*Group, error) {
 	session := client.conn
 	if tx != nil {
 		session = tx[0]
@@ -69,7 +69,7 @@ func (client *GroupDal) GetGroupById(id int64, tx ...*gorm.DB) (*Group, error) {
 	return group, err
 }
 
-func (client *GroupDal) DeleteGroupById(id int64, tx ...*gorm.DB) error {
+func (client *GroupClient) DeleteGroupById(id int64, tx ...*gorm.DB) error {
 	session := client.conn
 	if tx != nil {
 		session = tx[0]
@@ -79,7 +79,7 @@ func (client *GroupDal) DeleteGroupById(id int64, tx ...*gorm.DB) error {
 	return err
 }
 
-func (client *GroupDal) UpdateGroupById(id int64, updateFields map[Field]interface{}, tx ...*gorm.DB) error {
+func (client *GroupClient) UpdateGroupById(id int64, updateFields map[Field]interface{}, tx ...*gorm.DB) error {
 	session := client.conn
 	if tx != nil {
 		session = tx[0]
@@ -88,7 +88,7 @@ func (client *GroupDal) UpdateGroupById(id int64, updateFields map[Field]interfa
 	return err
 }
 
-func (client *GroupDal) BatchGetGroupByIds(ids []int64, page *Paging, tx ...*gorm.DB) ([]Group, error) {
+func (client *GroupClient) BatchGetGroupByIds(ids []int64, page *Paging, tx ...*gorm.DB) ([]Group, error) {
 	session := client.conn
 	if tx != nil {
 		session = tx[0]
