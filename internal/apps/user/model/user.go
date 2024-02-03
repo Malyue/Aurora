@@ -91,7 +91,7 @@ func (u *UserDal) DeleteUserByID(id string) error {
 
 func (u *UserDal) GetCountByAccount(account string) (int64, error) {
 	var total int64
-	err := u.conn.Model(&User{}).Count(&total).Error
+	err := u.conn.Model(&User{}).Where("account=?", account).Count(&total).Error
 	if err != nil {
 		return -1, err
 	}

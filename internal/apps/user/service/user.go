@@ -45,7 +45,7 @@ func (s *UserServer) CreateUser(ctx context.Context, req *userpb.CreateUserReque
 	if err != nil {
 		return nil, err
 	}
-	if count <= 0 {
+	if count > 0 {
 		return &userpb.CreateUserResponse{
 			User:    nil,
 			Success: false,

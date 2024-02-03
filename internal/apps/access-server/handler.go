@@ -26,10 +26,11 @@ func wsHandler(s *Server) func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		msg, err := message.GetAuthMessage(data)
-		if err != nil {
-			return
-		}
+		//msg, err := message.GetAuthMessage(data)
+		//if err != nil {
+		//	return
+		//}
+		var msg *message.Msg
 
 		// valid token
 		verifyTokenResp, err := s.UserServer.VerifyToken(context.Background(), &userpb.VerifyTokenRequest{

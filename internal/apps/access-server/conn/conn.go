@@ -1,6 +1,8 @@
 package conn
 
 import (
+	"Aurora/internal/apps/access-server/internal/message"
+	"encoding/json"
 	"errors"
 	"github.com/gorilla/websocket"
 	"sync"
@@ -33,9 +35,17 @@ func NewConn(c *websocket.Conn, userId string) *Conn {
 	return conn
 }
 
-func (c *Conn) HandleMessage(bytes []byte) {
-	// TODO Unmarshal the msg
-	// switch case to judge the type of the message
+func (c *Conn) HandleMessage(data []byte) error {
+	var msg *message.Msg
+	if err := json.Unmarshal(data, &msg); err != nil {
+		return err
+	}
+
+	if !message.IfMsgTypeAllowed(msg.Type) {
+		return errors.New("invalid msg type")
+	}
+
+	return nil
 }
 
 func (c *Conn) Write(bytes []byte) error {
@@ -63,7 +73,7 @@ func (c *Conn) Close() error {
 		close(c.closeChan)
 		c.isClose = true
 	}
-	// TODO delete from connmanager
+	// TODO delete from conn manager
 	c.mutex.Unlock()
 	return c.WS.Close()
 }

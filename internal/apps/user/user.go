@@ -57,11 +57,10 @@ func (s *Server) Run() error {
 	// init jwt config
 	jwt.InitJWTConfig(&s.Cfg.Jwt)
 
-	s.SvcCtx.Logger.Info("User Service Start ... ")
-
 	if err := s.UserServer.Serve(lis); err != nil {
-		return err
+		s.SvcCtx.Logger.Error("User Service exit!")
 	}
+
 	return nil
 }
 
@@ -106,8 +105,8 @@ func New(opts ...OptionFunc) (*Server, error) {
 
 	// init grpc internal
 	s.Addr = s.Cfg.Host + ":" + s.Cfg.Port
-	grpcServer := grpc.NewServer()
-	userpb.RegisterUserServiceServer(grpcServer, service.NewUserServer(s.SvcCtx))
+	s.UserServer = grpc.NewServer()
+	userpb.RegisterUserServiceServer(s.UserServer, service.NewUserServer(s.SvcCtx))
 
 	s.SvcCtx.Logger.Info("User Service Init...")
 

@@ -1,5 +1,5 @@
 CREATE TABLE `user` (
-    `id` varchar(50) NOT NULL COMMMENt '用户id',
+    `id` varchar(50) NOT NULL COMMENT '用户id',
     `account` varchar(20) CHARACTER SET utf8mb4 NOT NULL DEFAULT '' COMMENT '账号',
     `username` varchar(20) CHARACTER SET utf8mb4 NOT NULL DEFAULT '' COMMENT '用户名',
     `password` varchar(255) NOT NULL COMMENT '用户密码',

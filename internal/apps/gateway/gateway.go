@@ -46,7 +46,6 @@ func (s *Server) Run() error {
 	return nil
 
 	// TODO set signal to quit
-
 }
 
 func New(opts ...OptionFunc) (*Server, error) {
