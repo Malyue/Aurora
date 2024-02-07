@@ -3,6 +3,7 @@ package access_server
 import (
 	userpb "Aurora/api/proto-go/user"
 	"Aurora/internal/apps/access-server/conn"
+	_sony "Aurora/internal/apps/access-server/pkg/sonyflake"
 	discovery "Aurora/internal/pkg/etcd"
 	_grpc "Aurora/internal/pkg/grpc"
 	_log "Aurora/internal/pkg/log"
@@ -12,10 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/google/uuid"
-
 	_conn "Aurora/internal/apps/access-server/conn"
-	_pkg "Aurora/internal/apps/access-server/pkg/snowflake"
 	"Aurora/internal/apps/access-server/svc"
 	_config "Aurora/internal/tools/config"
 )
@@ -29,11 +27,11 @@ type stats struct {
 }
 
 type Config struct {
-	NodeId string       `json:"nodeId"`
+	//NodeId uint16       `json:"nodeId"`
 	Name   string       `json:"name"`
 	Host   string       `json:"host"`
 	Port   string       `json:"port"`
-	WorkID int64        `json:"workId"`
+	WorkID uint16       `json:"workId"`
 	Etcd   _config.Etcd `yaml:"etcd"`
 	Log    _log.Config  `yaml:"log"`
 	//Address string
@@ -51,7 +49,7 @@ type Server struct {
 	ipBlackList     map[string]uint64
 	ipBlackListLock sync.RWMutex
 
-	NodeSnowFlake *_pkg.Worker
+	//NodeSnowFlake *_pkg.Worker
 	// Node Manager select a node to send msg
 
 	// grpc client
@@ -70,17 +68,17 @@ func New(opts ...OptionFunc) (*Server, error) {
 		return nil, err
 	}
 
-	if cfg.NodeId == "" {
-		id := uuid.New()
-		cfg.NodeId = id.String()
-	}
+	//if cfg.NodeId == "" {
+	//	id := uuid.New()
+	//	cfg.NodeId = id.String()
+	//}
 
 	logger := _log.InitLogger(&cfg.Log)
 	// init snowflake
-	snowflakeWorker, err := _pkg.NewWorker(cfg.WorkID)
-	if err != nil {
-		return nil, err
-	}
+	//snowflakeWorker, err := _pkg.NewWorker(cfg.WorkID)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	// init connManager
 	connManager := _conn.NewConnManager()
@@ -88,6 +86,9 @@ func New(opts ...OptionFunc) (*Server, error) {
 	// TODO init timingWheel
 
 	// TODO init redis
+
+	// init sonyflake
+	_sony.Init(cfg.WorkID)
 
 	// add grpc client
 	etcdResolver := discovery.NewResolver([]string{cfg.Etcd.Address}, logger)
@@ -100,11 +101,11 @@ func New(opts ...OptionFunc) (*Server, error) {
 	}
 
 	return &Server{
-		Config:        cfg,
-		NodeSnowFlake: snowflakeWorker,
-		start:         time.Now(),
-		connManager:   connManager,
-		UserServer:    userServer,
+		Config: cfg,
+		//NodeSnowFlake: snowflakeWorker,
+		start:       time.Now(),
+		connManager: connManager,
+		UserServer:  userServer,
 	}, nil
 }
 

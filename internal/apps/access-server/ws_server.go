@@ -26,11 +26,11 @@ func (s *Server) StartWSServer() {
 
 func DoConn(conn *_conn.Conn) {
 	for {
-		err := conn.WS.SetReadDeadline(time.Now().Add(12 * time.Minute))
+		err := conn.Conn.SetReadDeadline(time.Now().Add(12 * time.Minute))
 		if err != nil {
 			return
 		}
-		_, data, err := conn.WS.ReadMessage()
+		_, data, err := conn.Conn.ReadMessage()
 		if err != nil {
 
 		}

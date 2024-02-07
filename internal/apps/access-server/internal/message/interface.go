@@ -1,15 +1,21 @@
 package message
 
+import (
+	"encoding/json"
+	"errors"
+)
+
 type Msg struct {
 	Type MsgType `json:"type"`
 	Msg  Interface
 }
 
 type Interface interface {
-	GetMsgID() int64
+	GetMsgID() uint64
 	GetMsgType() MsgType
 	GetPayload() []byte
-	GetReceiverType() int64
+	// GetReceiverID returns receiverID and if it needs to get id from db
+	GetReceiverID() ([]string, bool)
 }
 
 type Receiver int
@@ -35,4 +41,17 @@ func IfMsgTypeAllowed(t MsgType) bool {
 		return true
 	}
 	return false
+}
+
+func ParseMessage(data []byte) (*Msg, error) {
+	var msg *Msg
+	if err := json.Unmarshal(data, &msg); err != nil {
+		return nil, err
+	}
+
+	if !IfMsgTypeAllowed(msg.Type) {
+		return nil, errors.New("invalid msg type")
+	}
+
+	return msg, nil
 }

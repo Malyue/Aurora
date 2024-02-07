@@ -2,50 +2,59 @@ package conn
 
 import (
 	"Aurora/internal/apps/access-server/internal/message"
-	"encoding/json"
-	"errors"
 	"github.com/gorilla/websocket"
+	"github.com/sirupsen/logrus"
 	"sync"
 	"time"
 )
 
+const (
+	// Time allowed to write a message to the peer.
+	writeWait = 10 * time.Second
+
+	// Time allowed to read the next pong message from the peer.
+	pongWait = 60 * time.Second
+
+	// Send pings to peer with this period. Must be less than pongWait.
+	pingPeriod = (pongWait * 9) / 10
+
+	// Maximum message size allowed from peer.
+	maxMessageSize = 512
+)
+
+var (
+	newline = []byte{'\n'}
+	space   = []byte{' '}
+)
+
 type Conn struct {
 	mutex  sync.Mutex
-	WS     *websocket.Conn
+	Conn   *websocket.Conn
 	UserId string
 	//DeviceId  int64
-	inChan    chan []byte
-	outChan   chan []byte
+	//inChan    chan []byte
+	//outChan   chan []byte
+	send      chan []byte
 	closeChan chan []byte
 	isClose   bool
+	hub       *ConnManager
 }
 
-func NewConn(c *websocket.Conn, userId string) *Conn {
+func NewConn(c *websocket.Conn, userId string, hub *ConnManager) *Conn {
 	conn := &Conn{
-		inChan:    make(chan []byte, 1024),
-		outChan:   make(chan []byte, 1024),
+		send:      make(chan []byte),
 		closeChan: make(chan []byte, 1),
-		WS:        c,
+		Conn:      c,
 		UserId:    userId,
+		hub:       hub,
 	}
 
-	go conn.ReadMsgLoop()
-	go conn.WriteMsgLoop()
+	go conn.ReadPump()
+	go conn.WritePump()
+
+	conn.hub.register <- conn
 
 	return conn
-}
-
-func (c *Conn) HandleMessage(data []byte) error {
-	var msg *message.Msg
-	if err := json.Unmarshal(data, &msg); err != nil {
-		return err
-	}
-
-	if !message.IfMsgTypeAllowed(msg.Type) {
-		return errors.New("invalid msg type")
-	}
-
-	return nil
 }
 
 func (c *Conn) Write(bytes []byte) error {
@@ -56,11 +65,11 @@ func (c *Conn) WriteToWs(bytes []byte) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	err := c.WS.SetWriteDeadline(time.Now().Add(10 * time.Millisecond))
+	err := c.Conn.SetWriteDeadline(time.Now().Add(10 * time.Millisecond))
 	if err != nil {
 		return err
 	}
-	return c.WS.WriteMessage(websocket.BinaryMessage, bytes)
+	return c.Conn.WriteMessage(websocket.BinaryMessage, bytes)
 }
 
 func (c *Conn) Close() error {
@@ -75,77 +84,97 @@ func (c *Conn) Close() error {
 	}
 	// TODO delete from conn manager
 	c.mutex.Unlock()
-	return c.WS.Close()
+	return c.Conn.Close()
 }
 
 func (c *Conn) GetAddr() string {
-	return c.WS.RemoteAddr().String()
+	return c.Conn.RemoteAddr().String()
 }
 
-func (c *Conn) ReadMsgLoop() {
+// ReadPump pumps messages from the websocket connection to the hub.
+// The application runs readPump in a per-connection goroutine. The application
+// ensures that there is at most one reader on a connection by executing all
+// reads from this goroutine.
+func (c *Conn) ReadPump() {
+	defer func() {
+		c.hub.unregister <- c
+		c.Conn.Close()
+	}()
+	c.Conn.SetReadLimit(maxMessageSize)
+	c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.Conn.SetPongHandler(func(string) error {
+		c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
+
 	for {
-		var (
-			data []byte
-			err  error
-		)
-		// receive data
-		if _, data, err = c.WS.ReadMessage(); err != nil {
-			c.Close()
+		_, byteMsg, err := c.Conn.ReadMessage()
+		if err != nil {
+			//if websocket.IsUnexpectedCloseError(err,websocket.CloseGoingAway,websocket.CloseAbnormalClosure){
+			//
+			//}
+			logrus.Error("Read Message error: %s", err)
+			break
 		}
-		// write data
-		if err = c.InChanWrite(data); err != nil {
-			c.Close()
+
+		// parse msg as message.Interface
+
+		msg, _ := message.ParseMessage(byteMsg)
+
+		switch msg.Type {
+		case message.Person:
+			msg.Msg, _ = message.ParsePersonMessage(byteMsg)
+		case message.Broadcast:
+			msg.Msg, _ = message.ParseBroadcastMessage(byteMsg)
 		}
+
+		c.hub.GetBroadcast() <- msg.Msg
 	}
 }
 
-func (c *Conn) WriteMsgLoop() {
+// WritePump pumps messages from the hub to the websocket connection.
+// A goroutine running writePump is started for each connection. The
+// application ensures that there is at most one writer to a connection by
+// executing all writes from this goroutine.
+func (c *Conn) WritePump() {
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		ticker.Stop()
+		c.Conn.Close()
+	}()
+
 	for {
-		var (
-			data []byte
-			err  error
-		)
-		if data, err = c.OutChanRead(); err != nil {
-			c.Close()
+		select {
+		case msg, ok := <-c.send:
+			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if !ok {
+				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+
+			w, err := c.Conn.NextWriter(websocket.TextMessage)
+			if err != nil {
+				c.Conn.WriteMessage(websocket.CloseMessage, []byte(err.Error()))
+				return
+			}
+
+			w.Write(msg)
+
+			// Add queued chat msg to the current ws message
+			n := len(c.send)
+			for i := 0; i < n; i++ {
+				w.Write(newline)
+				w.Write(<-c.send)
+			}
+
+			if err := w.Close(); err != nil {
+				c.Conn.WriteMessage(websocket.CloseMessage, []byte(err.Error()))
+			}
+		case <-ticker.C:
+			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := c.Conn.WriteMessage(websocket.PingMessage, newline); err != nil {
+				return
+			}
 		}
-		if err = c.WS.WriteMessage(1, data); err != nil {
-			c.Close()
-		}
 	}
-}
-
-func (c *Conn) InChanRead() (data []byte, err error) {
-	select {
-	case data = <-c.inChan:
-	case <-c.closeChan:
-		err = errors.New("conn is closed")
-	}
-	return nil, err
-}
-
-func (c *Conn) InChanWrite(data []byte) (err error) {
-	select {
-	case c.outChan <- data:
-	case <-c.closeChan:
-		err = errors.New("conn is closed")
-	}
-	return err
-}
-
-func (c *Conn) OutChanRead() (data []byte, err error) {
-	select {
-	case data = <-c.outChan:
-	case <-c.closeChan:
-		err = errors.New("conn is closed")
-	}
-	return nil, err
-}
-
-func (c *Conn) OutChanWrite(data []byte) (err error) {
-	select {
-	case c.outChan <- data:
-	case <-c.closeChan:
-		err = errors.New("conn is closed")
-	}
-	return err
 }

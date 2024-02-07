@@ -19,18 +19,31 @@ func wsHandler(s *Server) func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// block to wait the authorization
+		// block to wait the authorization package
 		_, data, err := wsConn.ReadMessage()
 		if err != nil {
-			// TODO close conn
+			msg, _ := json.Marshal(_resp.ResponseCode{
+				Code: _errorx.CodeServerBusy,
+				Msg:  "verify user error",
+				Data: nil,
+			})
+			wsConn.WriteMessage(websocket.TextMessage, msg)
+			wsConn.Close()
 			return
 		}
 
-		//msg, err := message.GetAuthMessage(data)
-		//if err != nil {
-		//	return
-		//}
-		var msg *message.Msg
+		var msg *message.AuthMessage
+		msg, err = message.HandlerAuthMessage(data)
+		if err != nil {
+			msg, _ := json.Marshal(_resp.ResponseCode{
+				Code: _errorx.CodeServerBusy,
+				Msg:  "verify user error",
+				Data: nil,
+			})
+			wsConn.WriteMessage(websocket.TextMessage, msg)
+			wsConn.Close()
+			return
+		}
 
 		// valid token
 		verifyTokenResp, err := s.UserServer.VerifyToken(context.Background(), &userpb.VerifyTokenRequest{
@@ -60,8 +73,11 @@ func wsHandler(s *Server) func(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// keep a conn in manager
-		conn := _conn.NewConn(wsConn, verifyTokenResp.Id)
-		s.connManager.AddConn(conn, conn.UserId)
+		conn := _conn.NewConn(wsConn, verifyTokenResp.Id, s.connManager)
+
 		// TODO set a ack model
+
+		// start a read channel
+		go conn.ReadMsgLoop()
 	}
 }

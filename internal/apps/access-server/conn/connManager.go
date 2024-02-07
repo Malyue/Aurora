@@ -1,40 +1,85 @@
 package conn
 
 import (
-	"github.com/gorilla/websocket"
+	"Aurora/internal/apps/access-server/internal/message"
+	"encoding/json"
 	"sync"
 )
 
 type ConnManager struct {
 	UserConnMap map[string][]int64
 	//ConnMap     map[*websocket.Conn]struct{}
-	ConnMap map[string]*Conn
+	Clients    map[string]*Conn
+	register   chan *Conn
+	unregister chan *Conn
+	broadcast  chan message.Interface
+	// GroupClient
+	// UserClient
 	sync.RWMutex
-	//*svc.ServerCtx
 }
 
 func NewConnManager() *ConnManager {
 	return &ConnManager{
 		//UserConnMap: make(map[string][]int64),
-		ConnMap: make(map[string]*Conn),
-		//ServerCtx: s,
+		Clients:    make(map[string]*Conn),
+		register:   make(chan *Conn),
+		unregister: make(chan *Conn),
+		broadcast:  make(chan message.Interface),
 	}
 }
 
-func (c *ConnManager) AddConn(conn *Conn, id string) {
-	c.Lock()
-	defer c.Unlock()
-	c.ConnMap[id] = conn
+func (cm *ConnManager) Run() {
+	for {
+		select {
+		case client := <-cm.register:
+			cm.addConn(client)
+		case client := <-cm.unregister:
+			cm.removeConn(client.UserId)
+		case msg := <-cm.broadcast:
+			cm.msgBroadcast(msg)
+		}
+	}
 }
 
-func (c *ConnManager) RemoveConn(id string) {
-	c.Lock()
-	defer c.Unlock()
-	delete(c.ConnMap, id)
+func (cm *ConnManager) addConn(conn *Conn) {
+	cm.Lock()
+	defer cm.Unlock()
+	cm.Clients[conn.UserId] = conn
 }
 
-func (c *ConnManager) GetConn(id string) *websocket.Conn {
-	c.RLock()
-	defer c.RUnlock()
-	return c.ConnMap[id]
+func (cm *ConnManager) removeConn(id string) {
+	cm.Lock()
+	defer cm.Unlock()
+	delete(cm.Clients, id)
+}
+
+func (cm *ConnManager) GetConn(id string) *Conn {
+	cm.RLock()
+	defer cm.RUnlock()
+	return cm.Clients[id]
+}
+
+func (cm *ConnManager) GetBroadcast() chan message.Interface {
+	return cm.broadcast
+}
+
+func (cm *ConnManager) msgBroadcast(msg message.Interface) {
+	byteMessage, _ := json.Marshal(&msg)
+	receivers, flag := msg.GetReceiverID()
+	if flag {
+		// get receivers id from db
+		switch msg.GetMsgType() {
+		case message.Group:
+			// TODO get receiver ids
+		case message.Broadcast:
+
+		}
+
+	}
+	for i := 0; i < len(receivers); i++ {
+		client, ifExist := cm.Clients[receivers[i]]
+		if ifExist {
+			client.send <- byteMessage
+		}
+	}
 }
