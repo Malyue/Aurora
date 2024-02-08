@@ -1,24 +1,27 @@
 package main
 
 import (
-	"fmt"
-	"io/ioutil"
-	"net/http"
+	"path/filepath"
+
+	_aiProxy "Aurora/internal/apps/ai-proxy"
 )
 
+const config = "cmd/ai-proxy/config.yaml"
+
 func main() {
-	resp, err := http.Get("http://open-ai.malyue.cn")
+	dir, err := filepath.Abs(filepath.Dir("."))
+	filePath := filepath.Join(dir, config)
 	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println(err)
-		return
+		panic(err)
 	}
 
-	fmt.Println(string(body))
+	server, err := _aiProxy.New(
+		_aiProxy.WithConfig(filePath))
+	if err != nil {
+		panic(err)
+	}
+
+	if err := server.Run(); err != nil {
+		panic(err)
+	}
 }
