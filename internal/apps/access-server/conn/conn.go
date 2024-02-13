@@ -1,7 +1,7 @@
 package conn
 
 import (
-	"Aurora/internal/apps/access-server/internal/message"
+	_message "Aurora/internal/apps/access-server/pkg/message"
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
 	"sync"
@@ -49,10 +49,10 @@ func NewConn(c *websocket.Conn, userId string, hub *ConnManager) *Conn {
 		hub:       hub,
 	}
 
+	conn.hub.register <- conn
+
 	go conn.ReadPump()
 	go conn.WritePump()
-
-	conn.hub.register <- conn
 
 	return conn
 }
@@ -119,13 +119,13 @@ func (c *Conn) ReadPump() {
 
 		// parse msg as message.Interface
 
-		msg, _ := message.ParseMessage(byteMsg)
+		msg, _ := _message.Decode(byteMsg)
 
 		switch msg.Type {
-		case message.Person:
-			msg.Msg, _ = message.ParsePersonMessage(byteMsg)
-		case message.Broadcast:
-			msg.Msg, _ = message.ParseBroadcastMessage(byteMsg)
+		case _message.Person:
+			msg.Msg, _ = _message.ParsePersonMessage(byteMsg)
+		case _message.Broadcast:
+			msg.Msg, _ = _message.ParseBroadcastMessage(byteMsg)
 		}
 
 		c.hub.GetBroadcast() <- msg.Msg

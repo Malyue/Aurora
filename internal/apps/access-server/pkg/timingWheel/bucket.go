@@ -14,6 +14,7 @@ type Timer struct {
 	// the bucket holds the list to which this timer's element belongs
 	b       unsafe.Pointer
 	element *list.Element
+	C       chan struct{}
 }
 
 func (t *Timer) getBucket() *bucket {

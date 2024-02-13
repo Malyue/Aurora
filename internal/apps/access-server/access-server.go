@@ -13,7 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	_conn "Aurora/internal/apps/access-server/conn"
+	_conn "Aurora/internal/apps/access-server/pkg/conn"
 	"Aurora/internal/apps/access-server/svc"
 	_config "Aurora/internal/tools/config"
 )
@@ -28,12 +28,13 @@ type stats struct {
 
 type Config struct {
 	//NodeId uint16       `json:"nodeId"`
-	Name   string       `json:"name"`
-	Host   string       `json:"host"`
-	Port   string       `json:"port"`
-	WorkID uint16       `json:"workId"`
-	Etcd   _config.Etcd `yaml:"etcd"`
-	Log    _log.Config  `yaml:"log"`
+	Name    string       `json:"name"`
+	Host    string       `json:"host"`
+	Port    string       `json:"port"`
+	WorkID  uint16       `json:"workId"`
+	Etcd    _config.Etcd `yaml:"etcd"`
+	Log     _log.Config  `yaml:"log"`
+	ConnOpt _conn.Option `yaml:"conn"`
 	//Address string
 	// redis -- to get the conn situation
 	//RedisConf redis.Config
@@ -81,7 +82,7 @@ func New(opts ...OptionFunc) (*Server, error) {
 	//}
 
 	// init connManager
-	connManager := _conn.NewConnManager()
+	//connManager := _conn.NewConnManager()
 
 	// TODO init timingWheel
 
@@ -103,9 +104,9 @@ func New(opts ...OptionFunc) (*Server, error) {
 	return &Server{
 		Config: cfg,
 		//NodeSnowFlake: snowflakeWorker,
-		start:       time.Now(),
-		connManager: connManager,
-		UserServer:  userServer,
+		start: time.Now(),
+		//connManager: connManager,
+		UserServer: userServer,
 	}, nil
 }
 

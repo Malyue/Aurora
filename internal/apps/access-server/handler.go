@@ -1,83 +1,87 @@
 package access_server
 
 import (
-	userpb "Aurora/api/proto-go/user"
-	_conn "Aurora/internal/apps/access-server/conn"
-	"Aurora/internal/apps/access-server/internal/message"
-	_errorx "Aurora/internal/pkg/errorx"
-	_resp "Aurora/internal/pkg/resp"
-	"context"
-	"encoding/json"
-	"github.com/gorilla/websocket"
+	"Aurora/internal/apps/access-server/pkg/client"
+	_conn "Aurora/internal/apps/access-server/pkg/conn"
+	_message "Aurora/internal/apps/access-server/pkg/message"
 	"net/http"
 )
 
+
 func wsHandler(s *Server) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		wsConn, err := Upgrader.Upgrade(w, r, nil)
+		conn, err := Upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			return
 		}
+		proxy := _conn.ConnProxy{
+			conn: _conn.NewWsConnection(conn, &s.Config.ConnOpt),
+		}
+
 
 		// block to wait the authorization package
-		_, data, err := wsConn.ReadMessage()
-		if err != nil {
-			msg, _ := json.Marshal(_resp.ResponseCode{
-				Code: _errorx.CodeServerBusy,
-				Msg:  "verify user error",
-				Data: nil,
-			})
-			wsConn.WriteMessage(websocket.TextMessage, msg)
-			wsConn.Close()
-			return
-		}
+		//_, data, err := wsConn.ReadMessage()
+		//if err != nil {
+		//	msg, _ := json.Marshal(_resp.ResponseCode{
+		//		Code: _errorx.CodeServerBusy,
+		//		Msg:  "verify user error",
+		//		Data: nil,
+		//	})
+		//	wsConn.WriteMessage(websocket.TextMessage, msg)
+		//	wsConn.Close()
+		//	return
+		//}
 
-		var msg *message.AuthMessage
-		msg, err = message.HandlerAuthMessage(data)
-		if err != nil {
-			msg, _ := json.Marshal(_resp.ResponseCode{
-				Code: _errorx.CodeServerBusy,
-				Msg:  "verify user error",
-				Data: nil,
-			})
-			wsConn.WriteMessage(websocket.TextMessage, msg)
-			wsConn.Close()
-			return
-		}
+		//var msg *message.AuthMessage
+		//msg, err = message.HandlerAuthMessage(data)
+		//if err != nil {
+		//	msg, _ := json.Marshal(_resp.ResponseCode{
+		//		Code: _errorx.CodeServerBusy,
+		//		Msg:  "verify user error",
+		//		Data: nil,
+		//	})
+		//	wsConn.WriteMessage(websocket.TextMessage, msg)
+		//	wsConn.Close()
+		//	return
+		//}
 
 		// valid token
-		verifyTokenResp, err := s.UserServer.VerifyToken(context.Background(), &userpb.VerifyTokenRequest{
-			Token: msg.Token,
-		})
+		//verifyTokenResp, err := s.UserServer.VerifyToken(context.Background(), &userpb.VerifyTokenRequest{
+		//	Token: msg.Token,
+		//})
 
-		if err != nil {
-			msg, _ := json.Marshal(_resp.ResponseCode{
-				Code: _errorx.CodeServerBusy,
-				Msg:  "verify user error",
-				Data: nil,
-			})
-			wsConn.WriteMessage(websocket.TextMessage, msg)
-			wsConn.Close()
-			return
-		}
+		//if err != nil {
+		//	msg, _ := json.Marshal(_resp.ResponseCode{
+		//		Code: _errorx.CodeServerBusy,
+		//		Msg:  "verify user error",
+		//		Data: nil,
+		//	})
+		//	wsConn.WriteMessage(websocket.TextMessage, msg)
+		//	wsConn.Close()
+		//	return
+		//}
 
-		if verifyTokenResp.Expire {
-			msg, _ := json.Marshal(_resp.ResponseCode{
-				Code: _errorx.CodeTokenExpire,
-				Msg:  _errorx.CodeTokenExpire.Msg(),
-				Data: nil,
-			})
-			wsConn.WriteMessage(websocket.TextMessage, msg)
-			wsConn.Close()
-			return
-		}
+		//if verifyTokenResp.Expire {
+		//	msg, _ := json.Marshal(_resp.ResponseCode{
+		//		Code: _errorx.CodeTokenExpire,
+		//		Msg:  _errorx.CodeTokenExpire.Msg(),
+		//		Data: nil,
+		//	})
+		//	wsConn.WriteMessage(websocket.TextMessage, msg)
+		//	wsConn.Close()
+		//	return
+		//}
 
 		// keep a conn in manager
-		conn := _conn.NewConn(wsConn, verifyTokenResp.Id, s.connManager)
+		//_conn.NewConn(wsConn, verifyTokenResp.Id, s.connManager)
 
 		// TODO set a ack model
 
-		// start a read channel
-		go conn.ReadMsgLoop()
+	}
+}
+
+func HandlerRouter(callback func(action _message.Action, fn HandlerFunc) HandlerFunc) {
+	m := map[_message.Action]HandlerFunc {
+		_message.ActionChatMessage:
 	}
 }

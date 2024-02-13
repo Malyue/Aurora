@@ -118,6 +118,7 @@ func (tw *TimingWheel) advanceClock(expiration int64) {
 
 func (tw *TimingWheel) addOrRun(t *Timer) {
 	if !tw.add(t) {
+		t.C <- struct{}{}
 		go t.task()
 	}
 }

@@ -1,6 +1,8 @@
 package ack
 
-import "Aurora/internal/apps/access-server/internal/message"
+import (
+	"Aurora/internal/apps/access-server/pkg/message"
+)
 
 // retain an ack set
 // if it gets the response from the client, it means the msg has sent success

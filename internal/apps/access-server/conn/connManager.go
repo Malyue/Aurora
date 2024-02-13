@@ -1,7 +1,7 @@
 package conn
 
 import (
-	"Aurora/internal/apps/access-server/internal/message"
+	"Aurora/internal/apps/access-server/pkg/message"
 	"encoding/json"
 	"sync"
 )

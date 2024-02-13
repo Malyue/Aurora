@@ -43,8 +43,8 @@ func IfMsgTypeAllowed(t MsgType) bool {
 	return false
 }
 
-func ParseMessage(data []byte) (*Msg, error) {
-	var msg *Msg
+func Decode(data []byte) (*Msg, error) {
+	var msg Msg
 	if err := json.Unmarshal(data, &msg); err != nil {
 		return nil, err
 	}
@@ -53,5 +53,5 @@ func ParseMessage(data []byte) (*Msg, error) {
 		return nil, errors.New("invalid msg type")
 	}
 
-	return msg, nil
+	return &msg, nil
 }
