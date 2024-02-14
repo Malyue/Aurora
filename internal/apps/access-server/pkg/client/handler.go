@@ -6,7 +6,7 @@ type MessageHandler func(cliInfo *Info, message *_message.Message)
 
 type MessageInterceptor = func(client Client, msg *_message.Message) bool
 
-func (c *UserClient) handleHello(m _message.Message) {
+func (c *UserClient) handleHello(m *_message.Message) {
 	hello := _message.Hello{}
 	err := m.Data.Deserialize(&hello)
 	if err != nil {

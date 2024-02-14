@@ -2,13 +2,14 @@ package access_server
 
 import (
 	userpb "Aurora/api/proto-go/user"
-	"Aurora/internal/apps/access-server/conn"
+	_client "Aurora/internal/apps/access-server/pkg/client"
 	_sony "Aurora/internal/apps/access-server/pkg/sonyflake"
 	discovery "Aurora/internal/pkg/etcd"
 	_grpc "Aurora/internal/pkg/grpc"
 	_log "Aurora/internal/pkg/log"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/resolver"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -28,13 +29,14 @@ type stats struct {
 
 type Config struct {
 	//NodeId uint16       `json:"nodeId"`
-	Name    string       `json:"name"`
-	Host    string       `json:"host"`
-	Port    string       `json:"port"`
-	WorkID  uint16       `json:"workId"`
-	Etcd    _config.Etcd `yaml:"etcd"`
-	Log     _log.Config  `yaml:"log"`
-	ConnOpt _conn.Option `yaml:"conn"`
+	Name   string          `json:"name"`
+	Host   string          `json:"host"`
+	Port   string          `json:"port"`
+	WorkID uint16          `json:"workId"`
+	Etcd   _config.Etcd    `yaml:"etcd"`
+	Log    _log.Config     `yaml:"log"`
+	WsOpts _conn.Option    `yaml:"ws_opt"`
+	GwOpts _client.Options `yaml:"gateway_opt"`
 	//Address string
 	// redis -- to get the conn situation
 	//RedisConf redis.Config
@@ -43,12 +45,16 @@ type Config struct {
 type Server struct {
 	stats
 	//opts            *Options
-	Config          Config
-	start           time.Time
-	connManager     *conn.ConnManager
+	Config Config
+	start  time.Time
+	//connManager     *conn.ConnManager
 	svcCtx          *svc.ServerCtx
 	ipBlackList     map[string]uint64
 	ipBlackListLock sync.RWMutex
+
+	Gateway _client.Gateway
+	// Server the ws_server(includes run and handler conn)
+	Server _conn.Server
 
 	//NodeSnowFlake *_pkg.Worker
 	// Node Manager select a node to send msg
@@ -91,6 +97,8 @@ func New(opts ...OptionFunc) (*Server, error) {
 	// init sonyflake
 	_sony.Init(cfg.WorkID)
 
+	Init()
+
 	// add grpc client
 	etcdResolver := discovery.NewResolver([]string{cfg.Etcd.Address}, logger)
 	resolver.Register(etcdResolver)
@@ -101,18 +109,37 @@ func New(opts ...OptionFunc) (*Server, error) {
 		logrus.Errorf("create user client err : %s", err)
 	}
 
+	ctx := &svc.ServerCtx{
+		Logger: logger,
+	}
+
+	wsServer := _conn.NewWsServer(ctx, &cfg.WsOpts)
+
+	gateway, err := _client.NewClientHub(ctx, &cfg.GwOpts)
+	if err != nil {
+		ctx.Logger.Errorf("New Gateway error : %s", err)
+	}
+
 	return &Server{
 		Config: cfg,
 		//NodeSnowFlake: snowflakeWorker,
 		start: time.Now(),
 		//connManager: connManager,
+		Server:     wsServer,
+		Gateway:    gateway,
 		UserServer: userServer,
 	}, nil
 }
 
 func (s *Server) Run() error {
 	// start server to get
-	s.StartWSServer()
-
-	return nil
+	//s.StartWSServer()
+	s.Server.SetConnHandler(func(conn _conn.Conn) {
+		s.handlerConn(conn)
+	})
+	port, err := strconv.Atoi(s.Config.Port)
+	if err != nil {
+		return err
+	}
+	return s.Server.Run(s.Config.Host, port)
 }

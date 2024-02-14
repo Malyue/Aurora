@@ -94,3 +94,9 @@ func (r *defaultReader) ReadChWithCodec(conn conn.Conn, codec _message.Codec) (<
 	}()
 	return c, done
 }
+
+func (r *readerRes) Recycle() {
+	r.m = nil
+	r.err = nil
+	recyclePool.Put(r)
+}

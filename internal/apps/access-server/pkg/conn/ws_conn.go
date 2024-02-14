@@ -85,7 +85,7 @@ func (c *WsConn) wrapError(err error) error {
 		_ = c.conn.Close()
 		return ErrClosed
 	}
-	if strings.Contains(err.Error(), "use of closed network conn") {
+	if strings.Contains(err.Error(), "use of closed network Conn") {
 		_ = c.conn.Close()
 		return ErrClosed
 	}

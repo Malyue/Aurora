@@ -68,16 +68,18 @@ type UserClient struct {
 	info *Info
 
 	//hub conn.ConnManager
+	// mgr the client manager which manage this client
+	mgr        Gateway
 	msgHandler MessageHandler
 	ctx        *svc.ServerCtx
 	cfg        *Config
 }
 
-func NewClient(conn conn.Conn, msgHandler MessageHandler) Client {
-	return NewClientWithConfig(conn, msgHandler, nil)
+func NewClient(conn conn.Conn, mgr Gateway, msgHandler MessageHandler) Client {
+	return NewClientWithConfig(conn, mgr, msgHandler, nil)
 }
 
-func NewClientWithConfig(conn conn.Conn, msgHandler MessageHandler, cfg *Config) Client {
+func NewClientWithConfig(conn conn.Conn, mgr Gateway, msgHandler MessageHandler, cfg *Config) Client {
 	if cfg == nil {
 		cfg = &Config{
 			ClientHeartbeatDuration: defaultHeartbeatDuration,
@@ -95,11 +97,11 @@ func NewClientWithConfig(conn conn.Conn, msgHandler MessageHandler, cfg *Config)
 		msgHandler:   msgHandler,
 		// TODO init hbC and hbS
 		info: &Info{
-			ID:           NewID(),
 			ConnectionAt: time.Now().UnixMilli(),
 			CliAddr:      conn.GetConnInfo().Addr,
 		},
 		cfg: cfg,
+		mgr: mgr,
 	}
 
 	return &ret
@@ -113,7 +115,7 @@ func (c *UserClient) GetInfo() Info {
 	return *c.info
 }
 
-func (c *UserClient) SetUserID(id string) {
+func (c *UserClient) SetID(id ID) {
 	c.info.ID = id
 }
 
@@ -125,7 +127,7 @@ func (c *UserClient) readPump() {
 		}
 	}()
 
-	readChan, done := messageReader.ReadCh()
+	readChan, done := messageReader.ReadCh(c.conn)
 	var closeReason string
 	for {
 		select {
@@ -142,7 +144,8 @@ func (c *UserClient) readPump() {
 			}
 			if msg.err != nil {
 				if _message.IsDecodeError(msg.err) {
-					// TODO enqueueMessage
+					_ = c.EnqueueMessage(_message.NewMessage(0, _message.ActionNotifyError, msg.err.Error()))
+					continue
 				}
 				closeReason = msg.err.Error()
 				c.Exit()
@@ -176,6 +179,7 @@ func (c *UserClient) writePump() {
 
 }
 
+// EnqueueMessage set msg to the
 func (c *UserClient) EnqueueMessage(msg *_message.Message) error {
 	if atomic.LoadInt32(&c.state) == stateClosed {
 		return errors.New("client has closed")

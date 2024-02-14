@@ -2,7 +2,6 @@ package client
 
 import (
 	_message "Aurora/internal/apps/access-server/pkg/message"
-	_sonyflake "Aurora/internal/apps/access-server/pkg/sonyflake"
 )
 
 var (
@@ -11,7 +10,7 @@ var (
 )
 
 type Client interface {
-	SetUserID(id string)
+	SetID(id ID)
 	IsRunning() bool
 	EnqueueMessage(message *_message.Message) error
 	Exit()
@@ -20,6 +19,7 @@ type Client interface {
 	AddMessageInterceptor(interceptor MessageInterceptor)
 }
 
-func NewID() string {
-	return _sonyflake.NextStringID()
-}
+//
+//func NewID() string {
+//	return _sonyflake.NextStringID()
+//}

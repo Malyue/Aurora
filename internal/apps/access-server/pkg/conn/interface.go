@@ -3,7 +3,7 @@ package conn
 import "errors"
 
 var (
-	ErrClosed      = errors.New("conn closed")
+	ErrClosed      = errors.New("Conn closed")
 	ErrReadTimeout = errors.New("i/o timeout")
 	ErrBadPackage  = errors.New("bad package data")
 )
@@ -22,21 +22,21 @@ type ConnInfo struct {
 }
 
 type ConnProxy struct {
-	conn Conn
+	Conn Conn
 }
 
 func (c ConnProxy) Write(data []byte) error {
-	return c.conn.Write(data)
+	return c.Conn.Write(data)
 }
 
 func (c ConnProxy) Read() ([]byte, error) {
-	return c.conn.Read()
+	return c.Conn.Read()
 }
 
 func (c ConnProxy) Close() error {
-	return c.conn.Close()
+	return c.Conn.Close()
 }
 
 func (c ConnProxy) GetConnInfo() *ConnInfo {
-	return c.conn.GetConnInfo()
+	return c.Conn.GetConnInfo()
 }
