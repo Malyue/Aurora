@@ -58,6 +58,7 @@ func (r *defaultReader) ReadCh(conn conn.Conn) (<-chan *readerRes, chan<- struct
 	return r.ReadChWithCodec(conn, defautlCodec)
 }
 
+// ReadChWithCodec
 func (r *defaultReader) ReadChWithCodec(conn conn.Conn, codec _message.Codec) (<-chan *readerRes, chan<- struct{}) {
 	c := make(chan *readerRes, 10)
 	done := make(chan struct{})
@@ -74,6 +75,7 @@ func (r *defaultReader) ReadChWithCodec(conn conn.Conn, codec _message.Codec) (<
 			case <-done:
 				goto CLOSE
 			default:
+				// continue get msg from conn and set it in readerRes chan
 				msg, err := r.Read(conn)
 				res := recyclePool.Get().(*readerRes)
 				if err != nil {

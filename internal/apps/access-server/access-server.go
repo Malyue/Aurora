@@ -3,6 +3,8 @@ package access_server
 import (
 	userpb "Aurora/api/proto-go/user"
 	_client "Aurora/internal/apps/access-server/pkg/client"
+	_handler "Aurora/internal/apps/access-server/pkg/handler"
+	_message "Aurora/internal/apps/access-server/pkg/message"
 	_sony "Aurora/internal/apps/access-server/pkg/sonyflake"
 	discovery "Aurora/internal/pkg/etcd"
 	_grpc "Aurora/internal/pkg/grpc"
@@ -29,14 +31,15 @@ type stats struct {
 
 type Config struct {
 	//NodeId uint16       `json:"nodeId"`
-	Name   string          `json:"name"`
-	Host   string          `json:"host"`
-	Port   string          `json:"port"`
-	WorkID uint16          `json:"workId"`
-	Etcd   _config.Etcd    `yaml:"etcd"`
-	Log    _log.Config     `yaml:"log"`
-	WsOpts _conn.Option    `yaml:"ws_opt"`
-	GwOpts _client.Options `yaml:"gateway_opt"`
+	Name           string                         `json:"name"`
+	Host           string                         `json:"host"`
+	Port           string                         `json:"port"`
+	WorkID         uint16                         `json:"workId"`
+	Etcd           _config.Etcd                   `yaml:"etcd"`
+	Log            _log.Config                    `yaml:"log"`
+	WsOpts         _conn.Option                   `yaml:"ws_opt"`
+	GwOpts         _client.Options                `yaml:"gateway_opt"`
+	MsgHandlerOpts _handler.MessageHandlerOptions `yaml:"msg_handler_opts"`
 	//Address string
 	// redis -- to get the conn situation
 	//RedisConf redis.Config
@@ -114,11 +117,22 @@ func New(opts ...OptionFunc) (*Server, error) {
 	}
 
 	wsServer := _conn.NewWsServer(ctx, &cfg.WsOpts)
-
 	gateway, err := _client.NewClientHub(ctx, &cfg.GwOpts)
 	if err != nil {
 		ctx.Logger.Errorf("New Gateway error : %s", err)
 	}
+
+	handler, err := _handler.NewHandlerWithOptions(gateway, ctx, &cfg.MsgHandlerOpts)
+	if err != nil {
+		ctx.Logger.Errorf("New Handler error : %s", err)
+	}
+
+	gateway.SetMessageHandler(func(cliInfo *_client.Info, message *_message.Message) {
+		err = handler.Handle(cliInfo, message)
+		if err != nil {
+			ctx.Logger.Errorf("handler message error : %s", err)
+		}
+	})
 
 	return &Server{
 		Config: cfg,

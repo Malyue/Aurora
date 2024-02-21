@@ -1,6 +1,7 @@
 package conn
 
 import (
+	"Aurora/internal/apps/access-server/pkg/client"
 	"Aurora/internal/apps/access-server/svc"
 	"fmt"
 	"github.com/gorilla/websocket"
@@ -22,10 +23,12 @@ var (
 )
 
 type WsServer struct {
-	options  *Option
-	upgrader websocket.Upgrader
-	handler  ConnectionHandler
-	ctx      *svc.ServerCtx
+	options   *Option
+	upgrader  websocket.Upgrader
+	handler   ConnectionHandler
+	ctx       *svc.ServerCtx
+	h         client.MessageHandler
+	decorator client.Gateway
 }
 
 func NewWsServer(ctx *svc.ServerCtx, options *Option) *WsServer {
@@ -68,3 +71,27 @@ func (ws *WsServer) Run(host string, port int) error {
 	}
 	return nil
 }
+
+//func (ws *WsServer) SetMessageHandler(h MessageHandler) {
+//	ws.h = h
+//}
+//
+//func (ws *WsServer) GetClient(id ID) Client {
+//	return ws.decorator.GetClient(id)
+//}
+//
+//func (ws *WsServer) GetAll() map[ID]Info {
+//	return ws.decorator.GetAll()
+//}
+//
+//func (ws *WsServer) AddClient(c Client) {
+//	ws.decorator.AddClient(c)
+//}
+//
+//func (ws *WsServer) SetClientID(old ID, new ID) error {
+//	return ws.decorator.SetClientID(old, new)
+//}
+//
+//func (ws *WsServer) UpdateClient(id ID, secret *ClientSecrets) error {
+//	return ws.decorator.UpdateClient(id, secret)
+//}

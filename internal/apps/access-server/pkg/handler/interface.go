@@ -4,6 +4,7 @@ import (
 	"Aurora/internal/apps/access-server/pkg/client"
 	_client "Aurora/internal/apps/access-server/pkg/client"
 	_message "Aurora/internal/apps/access-server/pkg/message"
+	"Aurora/internal/apps/access-server/pkg/subscription"
 )
 
 type HandlerFunc func(cliInfo *client.Info, message *_message.Message) error
@@ -16,5 +17,8 @@ type MessageHandler interface {
 
 type Handler interface {
 	Handle(clientInfo *client.Info, msg *_message.Message) error
-	//AddHandler(i Me)
+
+	AddHandler(i MessageHandler)
+
+	SetSubscription(g subscription.Interface)
 }

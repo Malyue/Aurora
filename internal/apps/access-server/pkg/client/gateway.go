@@ -121,11 +121,11 @@ func (c *ClientsHub) SetClientID(oldID, newID ID) error {
 
 	cli, ok := c.clients[oldID]
 	if !ok || cli == nil {
-		return errors.New("client does not exist")
+		return errors.New(errClientNotExist)
 	}
 	cliLogged, exist := c.clients[newID]
 	if exist && cliLogged != nil {
-		return errors.New("client is exist")
+		return errors.New(errClientAlreadyExist)
 	}
 
 	oldInfo := cli.GetInfo()
@@ -147,7 +147,7 @@ func (c *ClientsHub) ExitClient(id ID) error {
 
 	cli, ok := c.clients[id]
 	if !ok || cli == nil {
-		return errors.New("client does not exist")
+		return errors.New(errClientNotExist)
 	}
 
 	info := cli.GetInfo()
@@ -166,7 +166,7 @@ func (c *ClientsHub) EnqueueMessage(id ID, msg *_message.Message) error {
 	id.SetGateway(c.id)
 	cli, ok := c.clients[id]
 	if !ok || cli == nil {
-		return errors.New("client does not exist")
+		return errors.New(errClientNotExist)
 	}
 
 	return c.enqueueMessage(cli, msg)
@@ -174,7 +174,7 @@ func (c *ClientsHub) EnqueueMessage(id ID, msg *_message.Message) error {
 
 func (c *ClientsHub) enqueueMessage(cli Client, msg *_message.Message) error {
 	if !cli.IsRunning() {
-		return errors.New("the client is closed")
+		return errors.New(errClientClosed)
 	}
 	err := c.pool.Submit(func() {
 		_ = cli.EnqueueMessage(msg)

@@ -16,13 +16,17 @@ const (
 	ActionAckRequest  = "ack.request"
 	ActionAckGroupMsg = "ack.group.msg"
 	ActionAckMessage  = "ack.message"
+	ActionAckNotify   = "ack.notify"
 
 	ActionNotifyUnknownAction = "notify.unknown.action"
 	ActionNotifyError         = "notify.error"
 	ActionNotifySuccess       = "notify.success"
+	ActionNotifyForbidden     = "notify.forbidden"
 
 	ActionInternalOnline  = "internal.online"
 	ActionInternalOffline = "internal.offline"
+
+	ActionAuthenticate = "authenticate"
 )
 
 func (a Action) IsInternal() bool {

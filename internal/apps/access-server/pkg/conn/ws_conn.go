@@ -37,6 +37,7 @@ func (c *WsConn) Write(data []byte) error {
 	return c.wrapError(err)
 }
 
+// Read message from client
 func (c *WsConn) Read() ([]byte, error) {
 	ddl := time.Now().Add(time.Duration(c.options.ReadTimeout))
 	_ = c.conn.SetReadDeadline(ddl)

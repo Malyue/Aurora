@@ -20,7 +20,7 @@ func (hc handlerChain) add(i MessageHandler) {
 	}
 }
 
-// handle
+// handle use handlerChain
 func (hc handlerChain) handle(h *MessageInterfaceImpl, clientInfo *_client.Info, message *_message.Message) bool {
 	if hc.h != nil && hc.h.Handle(h, clientInfo, message) {
 		return true

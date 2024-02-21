@@ -63,3 +63,7 @@ func (i *ID) SetDevice(device string) bool {
 	*i = ID(strings.Join(s, idSeparator))
 	return true
 }
+
+func (i *ID) Equals(other ID) bool {
+	return i.UID()+i.Device() == other.UID()+other.Device()
+}

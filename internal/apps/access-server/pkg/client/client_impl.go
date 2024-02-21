@@ -13,6 +13,8 @@ import (
 
 var tw = timingWheel.NewTimingWheel(500*time.Millisecond, 2000)
 
+type MessageInterceptor = func(client Client, msg *_message.Message) bool
+
 const (
 	defaultServerHeartbeatDuration = time.Second * 30
 	defaultHeartbeatDuration       = time.Second * 20
@@ -73,6 +75,8 @@ type UserClient struct {
 	msgHandler MessageHandler
 	ctx        *svc.ServerCtx
 	cfg        *Config
+
+	credentials *ClientAuthCredentials
 }
 
 func NewClient(conn conn.Conn, mgr Gateway, msgHandler MessageHandler) Client {
@@ -119,6 +123,7 @@ func (c *UserClient) SetID(id ID) {
 	c.info.ID = id
 }
 
+// readPump read message from readChan
 func (c *UserClient) readPump() {
 	defer func() {
 		err := recover()
@@ -163,8 +168,10 @@ func (c *UserClient) readPump() {
 			if msg.m.GetAction() == _message.ActionHello {
 				c.handleHello(msg.m)
 			} else {
+				// handler message and send the msg to the receivers
 				c.msgHandler(c.info, msg.m)
 			}
+			// recycle readerRes object
 			msg.Recycle()
 		}
 
@@ -175,11 +182,48 @@ STOP:
 	c.ctx.Logger.Info("Read exit,reason : %s", closeReason)
 }
 
+// writePump write msg to the client
 func (c *UserClient) writePump() {
-
+	defer func() {
+		err := recover()
+		if err != nil {
+			c.ctx.Logger.Debugf("write message error, exit client: %v", err)
+			c.Exit()
+		}
+	}()
+	var closeReason string
+	for {
+		select {
+		case <-c.closeWriteCh:
+			if closeReason == "" {
+				closeReason = "closed initiative"
+			}
+			goto STOP
+		//case <-c.hbS.C:
+		//	if !c.IsRunning() {
+		//		closeReason = "client not running"
+		//		goto STOP
+		//	}
+		//	_ = c.EnqueueMessage(messages.NewMessage(0, messages.ActionHeartbeat, nil))
+		//	c.hbS.Cancel()
+		//	c.hbS = tw.After(c.config.ServerHeartbeatDuration)
+		case m := <-c.messages:
+			if m == nil {
+				closeReason = "message is nil, maybe client has closed"
+				c.Exit()
+				break
+			}
+			c.write2Conn(m)
+			//c.hbS.Cancel()
+			//c.hbS = tw.After(c.config.ServerHeartbeatDuration)
+		}
+	}
+STOP:
+	//c.hbS.Cancel()
+	c.ctx.Logger.Debugf("write exit, addr=%s, reason:%s", c.info.CliAddr, closeReason)
 }
 
-// EnqueueMessage set msg to the
+// EnqueueMessage send msg in messages
 func (c *UserClient) EnqueueMessage(msg *_message.Message) error {
 	if atomic.LoadInt32(&c.state) == stateClosed {
 		return errors.New("client has closed")
@@ -225,6 +269,7 @@ func (c *UserClient) close() {
 }
 
 func (c *UserClient) write2Conn(m *_message.Message) {
+	// encode msg as byte
 	b, err := defautlCodec.Encode(m)
 	if err != nil {
 		c.ctx.Logger.Error("serialize output message", err)
@@ -232,11 +277,36 @@ func (c *UserClient) write2Conn(m *_message.Message) {
 	}
 
 	err = c.conn.Write(b)
+	// sub queue message
 	atomic.AddInt64(&c.queueMessage, -1)
 	if err != nil {
 		c.ctx.Logger.Error("runWrite err : %s", err)
 		c.closeWriteOnce.Do(func() {
 			close(c.closeWriteCh)
 		})
+	}
+}
+
+func (c *UserClient) SetCredentials(credentials *ClientAuthCredentials) {
+	c.credentials = credentials
+	c.info.ConnectionId = credentials.ConnectID
+	if credentials.ConnectConfig != nil {
+		c.cfg.HeartbeatLostLimit = credentials.ConnectConfig.AllowMaxHeartbeatLost
+		c.cfg.CloseImmediately = credentials.ConnectConfig.CloseImmediately
+		c.cfg.ClientHeartbeatDuration = time.Duration(credentials.ConnectConfig.HeartbeatDuration) * time.Second
+	}
+}
+
+func (c *UserClient) GetCredentials() *ClientAuthCredentials {
+	return c.credentials
+}
+
+func (c *UserClient) AddMessageInterceptor(interceptor MessageInterceptor) {
+	h := c.msgHandler
+	c.msgHandler = func(cliInfo *Info, msg *_message.Message) {
+		if interceptor(c, msg) {
+			return
+		}
+		h(cliInfo, msg)
 	}
 }
