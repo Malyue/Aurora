@@ -121,24 +121,42 @@ func (c *ClientsHub) SetClientID(oldID, newID ID) error {
 	oldID.SetGateway(c.id)
 	newID.SetGateway(c.id)
 
-	// check if the client is exists
+	// check if the old client is exists
+	// always in the auth step, the old is exists in this gateway
 	cli, ok := c.clients[oldID]
 	if !ok || cli == nil {
 		return errors.New(errClientNotExist)
 	}
 
+	// the new is always not exist, create it and delete the old
 	cliLogged, exist := c.clients[newID]
 	if exist && cliLogged != nil {
 		return errors.New(errClientAlreadyExist)
 	}
 
-	oldInfo := cli.GetInfo()
+	//oldInfo := cli.GetInfo()
 	cli.SetID(newID)
 	newInfo := cli.GetInfo()
 	delete(c.clients, oldID)
-	c.msgHandler(&oldInfo, _message.NewMessage(0, _message.ActionInternalOffline, oldID))
-	c.msgHandler(&newInfo, _message.NewMessage(0, _message.ActionInternalOnline, newID))
+	//c.msgHandler(&oldInfo, _message.NewMessage(0, _message.ActionInternalOffline, oldID))
 
+	// TODO delete the client which in the other server
+	// check if exist in the other server
+	gateId, err := c.ctx.RedisClient.GetRegisterInfo(newID.UID() + ":" + newID.Device())
+	if err != nil {
+		return err
+	}
+
+	if gateId != c.id && gateId != "" {
+		// if id is not equals, delete the oldest and update the router info in redis
+		// TODO use http or rpc method to call the remote server to delete the client in the gateway
+	}
+
+	// conn normally
+	c.ctx.RedisClient.SetRegisterRouterInfo(newID.UID(), newID.Device(), c.id)
+
+	// online msg to client
+	c.msgHandler(&newInfo, _message.NewMessage(0, _message.ActionInternalOnline, newID))
 	c.clients[newID] = cli
 	return nil
 }
@@ -158,6 +176,13 @@ func (c *ClientsHub) ExitClient(id ID) error {
 	cli.SetID("")
 	delete(c.clients, id)
 	c.msgHandler(&info, _message.NewMessage(0, _message.ActionInternalOffline, id))
+
+	err := c.ctx.RedisClient.DelRegisterInfo(id.UID() + ":" + id.Device())
+	if err != nil {
+		return err
+	}
+
+	// exit client
 	cli.Exit()
 
 	return nil

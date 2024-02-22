@@ -10,6 +10,7 @@ require (
 	github.com/go-eden/routine v1.0.2
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang-module/carbon v1.7.3
+	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.1
 	github.com/juju/ratelimit v1.0.2
 	github.com/panjf2000/ants/v2 v2.9.0

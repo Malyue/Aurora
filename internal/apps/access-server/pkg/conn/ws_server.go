@@ -4,6 +4,7 @@ import (
 	"Aurora/internal/apps/access-server/pkg/client"
 	"Aurora/internal/apps/access-server/svc"
 	"fmt"
+	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"net/http"
 )
@@ -63,8 +64,12 @@ func (ws *WsServer) SetConnHandler(handler ConnectionHandler) {
 	ws.handler = handler
 }
 
-func (ws *WsServer) Run(host string, port int) error {
-	http.HandleFunc("/ws", ws.wsHandler)
+func (ws *WsServer) Run(host string, port int, endpoints []Router) error {
+	r := mux.NewRouter()
+	r.HandleFunc("/ws", ws.wsHandler)
+	for _, endpoint := range endpoints {
+		r.HandleFunc(endpoint.Path, endpoint.Handler).Methods(endpoint.Method)
+	}
 	addr := fmt.Sprintf("%s:%d", host, port)
 	if err := http.ListenAndServe(addr, nil); err != nil {
 		return err

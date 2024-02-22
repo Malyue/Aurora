@@ -14,10 +14,10 @@ var Upgrader = websocket.Upgrader{
 	},
 }
 
-func (s *Server) StartWSServer() {
-	http.HandleFunc("/ws", wsHandler(s))
-	err := http.ListenAndServe(s.Config.Host+":"+s.Config.Port, nil)
-	if err != nil {
-		panic(err)
-	}
-}
+//func (s *Server) StartWSServer() {
+//	http.HandleFunc("/ws", wsHandler(s))
+//	err := http.ListenAndServe(s.Config.Host+":"+s.Config.Port, nil)
+//	if err != nil {
+//		panic(err)
+//	}
+//}

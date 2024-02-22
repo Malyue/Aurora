@@ -4,6 +4,7 @@ import (
 	_client "Aurora/internal/apps/access-server/pkg/client"
 	_conn "Aurora/internal/apps/access-server/pkg/conn"
 	_message "Aurora/internal/apps/access-server/pkg/message"
+	"net/http"
 	"strconv"
 	"time"
 )
@@ -43,6 +44,26 @@ func (s *Server) handlerConn(conn _conn.Conn) _client.ID {
 
 func (s *Server) handlerMessage(cliInfo *_client.Info, message *_message.Message) {
 
+}
+
+func (s *Server) initHandler() []_conn.Router {
+	return []_conn.Router{
+		{Path: "/v1/exitClient", Method: "GET", Handler: handlerDelClient(s)},
+	}
+}
+
+func handlerDelClient(s *Server) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// get client id from
+		// TODO check auth
+		id := _client.ID(r.URL.Query().Get("id"))
+		// check if the client is true
+		if id.Gateway() != strconv.Itoa(int(s.Config.WorkID)) {
+			// TODO handler error
+		}
+
+		s.Gateway.ExitClient(id)
+	}
 }
 
 //func wsHandler(s *Server) func(w http.ResponseWriter, r *http.Request) {

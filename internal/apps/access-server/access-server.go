@@ -165,5 +165,5 @@ func (s *Server) Run() error {
 	if err != nil {
 		return err
 	}
-	return s.Server.Run(s.Config.Host, port)
+	return s.Server.Run(s.Config.Host, port, s.initHandler())
 }
