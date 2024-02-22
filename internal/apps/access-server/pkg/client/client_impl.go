@@ -6,6 +6,7 @@ import (
 	"Aurora/internal/apps/access-server/pkg/timingWheel"
 	"Aurora/internal/apps/access-server/svc"
 	"errors"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -167,9 +168,14 @@ func (c *UserClient) readPump() {
 
 			if msg.m.GetAction() == _message.ActionHello {
 				c.handleHello(msg.m)
-			} else {
+			} else if msg.m.GetAction() == _message.ActionAuthenticate {
 				// handler message and send the msg to the receivers
 				c.msgHandler(c.info, msg.m)
+			} else {
+				// check whether the client id has tempPrefix
+				if !strings.HasPrefix(c.info.ID.UID(), tempIdPrefix) {
+					c.msgHandler(c.info, msg.m)
+				}
 			}
 			// recycle readerRes object
 			msg.Recycle()

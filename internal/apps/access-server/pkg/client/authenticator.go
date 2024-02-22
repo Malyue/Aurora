@@ -249,18 +249,21 @@ func (a *Authenticator) ClientAuthMessageInterceptor(client Client, message *_me
 		goto DONE
 	}
 
+	// decrypt credentials and get the client info(such as userid, jwt, device info ...)
 	authCredentials, err = a.credentialCrypto.DecryptCredentials([]byte(credential.Credential))
 	if err != nil {
 		errMsg = "invalid authenticate message"
 		goto DONE
 	}
 
+	// if the credential is expired
 	span = time.Now().UnixMilli() - authCredentials.Timestamp
 	if span > 1500*1500 {
 		errMsg = "credential expired"
 		goto DONE
 	}
 
+	// set the new id (if the user id is exists in other device, offline it)
 	newId, err = a.updateClient(client, authCredentials)
 
 DONE:
@@ -277,10 +280,24 @@ DONE:
 }
 
 func (a *Authenticator) updateClient(client Client, authCredentials *ClientAuthCredentials) (ID, error) {
+	// set credentials
 	client.SetCredentials(authCredentials)
+
+	// get id from client
 	oldID := client.GetInfo().ID
-	newID := NewID("", authCredentials.UserID, "")
+	// create a new id
+	newID := NewID(oldID.Gateway(), authCredentials.UserID, "")
+
+	//  set the client router into redis
+	err := a.ctx.RedisClient.SetRegisterRouterInfo(newID.UID(), newID.Device(), newID.Gateway())
+	if err != nil {
+		return "", err
+	}
+
+	// check if the client is exists in local, if not exist, check the other server
+	// the client is exists normally, because create a client it the previous step
 	err := a.gateway.SetClientID(oldID, newID)
+
 	//if err != nil && err.Error() == errClientAlreadyExist {
 	//	// if userid and device is equals, return it directly
 	//	if newID.Equals(oldID) {

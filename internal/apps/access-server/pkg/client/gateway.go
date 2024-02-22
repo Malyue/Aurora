@@ -112,6 +112,8 @@ func (c *ClientsHub) AddClient(cli Client) {
 
 }
 
+// SetClientID if the old is not exist or the new is exists, return error
+// otherwise, the old offline and the new online
 func (c *ClientsHub) SetClientID(oldID, newID ID) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -119,10 +121,12 @@ func (c *ClientsHub) SetClientID(oldID, newID ID) error {
 	oldID.SetGateway(c.id)
 	newID.SetGateway(c.id)
 
+	// check if the client is exists
 	cli, ok := c.clients[oldID]
 	if !ok || cli == nil {
 		return errors.New(errClientNotExist)
 	}
+
 	cliLogged, exist := c.clients[newID]
 	if exist && cliLogged != nil {
 		return errors.New(errClientAlreadyExist)

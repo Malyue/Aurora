@@ -2,6 +2,7 @@ package access_server
 
 import (
 	userpb "Aurora/api/proto-go/user"
+	_redisx "Aurora/internal/apps/access-server/model/redis"
 	_client "Aurora/internal/apps/access-server/pkg/client"
 	_handler "Aurora/internal/apps/access-server/pkg/handler"
 	_message "Aurora/internal/apps/access-server/pkg/message"
@@ -9,7 +10,8 @@ import (
 	discovery "Aurora/internal/pkg/etcd"
 	_grpc "Aurora/internal/pkg/grpc"
 	_log "Aurora/internal/pkg/log"
-	"github.com/sirupsen/logrus"
+	_redis "Aurora/internal/pkg/redis"
+	"context"
 	"google.golang.org/grpc/resolver"
 	"strconv"
 	"sync"
@@ -42,7 +44,7 @@ type Config struct {
 	MsgHandlerOpts _handler.MessageHandlerOptions `yaml:"msg_handler_opts"`
 	//Address string
 	// redis -- to get the conn situation
-	//RedisConf redis.Config
+	RedisConf _redis.Config
 }
 
 type Server struct {
@@ -109,11 +111,19 @@ func New(opts ...OptionFunc) (*Server, error) {
 
 	userServer, err := _grpc.InitUserClient()
 	if err != nil {
-		logrus.Errorf("create user client err : %s", err)
+		logger.Errorf("create user client err : %s", err)
+	}
+
+	// init redis
+	redisClient, err := _redis.NewRedis(&cfg.RedisConf)
+	if err != nil {
+		logger.Errorf("init redis err : %v", err)
 	}
 
 	ctx := &svc.ServerCtx{
-		Logger: logger,
+		Logger:      logger,
+		Ctx:         context.Background(),
+		RedisClient: &_redisx.RedisClient{Client: redisClient},
 	}
 
 	wsServer := _conn.NewWsServer(ctx, &cfg.WsOpts)
