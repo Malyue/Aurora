@@ -10,14 +10,13 @@ import (
 
 func (s *Server) handlerConn(conn _conn.Conn) _client.ID {
 	// only set gate id and a temp user id in this step, and it will set device and user id in the auth step
-	id := _client.NewID(strconv.Itoa(int(s.Config.WorkID)), "", "")
 	id, err := _client.NewTempID(strconv.Itoa(int(s.Config.WorkID)))
 	if err != nil {
 		s.svcCtx.Logger.Errorf("[gateway] gen temp id error : %v", err)
 		return ""
 	}
 
-	ret := _client.NewClientWithConfig(conn, s.Gateway, s.handlerMessage, &_client.Config{
+	ret := _client.NewClientWithConfig(conn, s.Gateway, s.Gateway.GetMessageHandler(), &_client.Config{
 		HeartbeatLostLimit:      3,
 		ClientHeartbeatDuration: time.Second * 30,
 		ServerHeartbeatDuration: time.Second * 30,

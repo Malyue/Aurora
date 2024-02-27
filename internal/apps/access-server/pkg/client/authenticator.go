@@ -1,10 +1,11 @@
 package client
 
 import (
+	userpb "Aurora/api/proto-go/user"
 	_message "Aurora/internal/apps/access-server/pkg/message"
 	"Aurora/internal/apps/access-server/svc"
-	"Aurora/pkg/hash"
 	"bytes"
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -12,8 +13,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"strings"
-	"time"
 )
 
 type CredentialCrypto interface {
@@ -186,45 +185,47 @@ func NewAuthenticator(gateway Gateway, key string, ctx *svc.ServerCtx) *Authenti
 	}
 }
 
-func (a *Authenticator) MessageInterceptor(client Client, message *_message.Message) bool {
-	if client.GetCredentials() == nil {
-		return false
-	}
-	//switch message.Action {
-	//
-	//}
-
-	if client.GetCredentials().Secrets == nil {
-		_ = a.gateway.EnqueueMessage(client.GetInfo().ID, _message.NewMessage(message.GetSeq(), _message.ActionNotifyForbidden, "no credentials"))
-		return true
-	}
-
-	secret := client.GetCredentials().Secrets.MessageDeliverSecret
-	if secret == "" {
-		_ = a.gateway.EnqueueMessage(client.GetInfo().ID, _message.NewMessage(message.GetSeq(), _message.ActionNotifyForbidden, "no message deliver secret"))
-		return true
-	}
-
-	var ticket = message.Ticket
-	if len(message.Ticket) != 40 {
-		_ = a.gateway.EnqueueMessage(client.GetInfo().ID, _message.NewMessage(message.GetSeq(), _message.ActionNotifyForbidden, "invalid ticket"))
-		return true
-	}
-
-	sum1 := hash.SHA1(secret + message.To)
-	id := client.GetInfo().ID
-	expectTicket := hash.SHA1(secret + id.UID() + sum1)
-
-	if strings.ToUpper(ticket) != strings.ToUpper(expectTicket) {
-		a.ctx.Logger.Errorf("invalid ticket, expected=%s, actually=%s, secret=%s, to=%s, from=%s", expectTicket, ticket, secret, message.To, id.UID())
-		// invalid ticket
-		_ = a.gateway.EnqueueMessage(client.GetInfo().ID, _message.NewMessage(message.GetSeq(), _message.ActionNotifyForbidden, "ticket expired"))
-		return true
-	}
-	return false
-}
+//func (a *Authenticator) MessageInterceptor(client Client, message *_message.Message) bool {
+//	if client.GetCredentials() == nil {
+//		return false
+//	}
+//	//switch message.Action {
+//	//
+//	//}
+//
+//	// if secrets is null, it is forbidden
+//	if client.GetCredentials().Secrets == nil {
+//		_ = a.gateway.EnqueueMessage(client.GetInfo().ID, _message.NewMessage(message.GetSeq(), _message.ActionNotifyForbidden, "no credentials"))
+//		return true
+//	}
+//
+//	secret := client.GetCredentials().Secrets.MessageDeliverSecret
+//	if secret == "" {
+//		_ = a.gateway.EnqueueMessage(client.GetInfo().ID, _message.NewMessage(message.GetSeq(), _message.ActionNotifyForbidden, "no message deliver secret"))
+//		return true
+//	}
+//
+//	var ticket = message.Ticket
+//	if len(message.Ticket) != 40 {
+//		_ = a.gateway.EnqueueMessage(client.GetInfo().ID, _message.NewMessage(message.GetSeq(), _message.ActionNotifyForbidden, "invalid ticket"))
+//		return true
+//	}
+//
+//	sum1 := hash.SHA1(secret + message.To)
+//	id := client.GetInfo().ID
+//	expectTicket := hash.SHA1(secret + id.UID() + sum1)
+//
+//	if strings.ToUpper(ticket) != strings.ToUpper(expectTicket) {
+//		a.ctx.Logger.Errorf("invalid ticket, expected=%s, actually=%s, secret=%s, to=%s, from=%s", expectTicket, ticket, secret, message.To, id.UID())
+//		// invalid ticket
+//		_ = a.gateway.EnqueueMessage(client.GetInfo().ID, _message.NewMessage(message.GetSeq(), _message.ActionNotifyForbidden, "ticket expired"))
+//		return true
+//	}
+//	return false
+//}
 
 func (a *Authenticator) ClientAuthMessageInterceptor(client Client, message *_message.Message) (intercept bool) {
+	// only support auth message
 	if message.Action != _message.ActionAuthenticate {
 		return false
 	}
@@ -234,9 +235,11 @@ func (a *Authenticator) ClientAuthMessageInterceptor(client Client, message *_me
 	var err error
 	var errMsg string
 	var newId ID
-	var span int64
-	var authCredentials *ClientAuthCredentials
+	//var span int64
+	//var authCredentials *ClientAuthCredentials
+	var resp *userpb.VerifyTokenResponse
 
+	// get auth msg
 	credential := EncryptedCredential{}
 	err = message.Data.Deserialize(&credential)
 	if err != nil {
@@ -244,32 +247,16 @@ func (a *Authenticator) ClientAuthMessageInterceptor(client Client, message *_me
 		goto DONE
 	}
 
-	if len(credential.Credential) < 5 {
-		errMsg = "invalid authenticate message"
-		goto DONE
-	}
-
-	// decrypt credentials and get the client info(such as userid, jwt, device info ...)
-	authCredentials, err = a.credentialCrypto.DecryptCredentials([]byte(credential.Credential))
+	// credential as token
+	resp, err = a.ctx.UserServer.VerifyToken(context.Background(), &userpb.VerifyTokenRequest{Token: credential.Credential})
 	if err != nil {
-		errMsg = "invalid authenticate message"
+		errMsg = "Auth error"
 		goto DONE
 	}
 
-	// if the credential is expired
-	span = time.Now().UnixMilli() - authCredentials.Timestamp
-	if span > 1500*1500 {
-		errMsg = "credential expired"
-		goto DONE
-	}
-
-	// set the new id (if the user id is exists in other device, offline it)
-	newId, err = a.updateClient(client, authCredentials)
-
+	// update client
+	newId, err = a.updateClient(client, &ClientAuthCredentials{UserID: resp.Id})
 DONE:
-	ac, _ := json.Marshal(authCredentials)
-	a.ctx.Logger.Debugf("credential: %s", string(ac))
-
 	if err != nil || errMsg != "" {
 		_ = a.gateway.EnqueueMessage(client.GetInfo().ID, _message.NewMessage(message.GetSeq(), _message.ActionNotifyError, errMsg))
 		return
@@ -277,6 +264,40 @@ DONE:
 
 	_ = a.gateway.EnqueueMessage(newId, _message.NewMessage(message.GetSeq(), _message.ActionNotifySuccess, nil))
 	return
+
+	//	if len(credential.Credential) < 5 {
+	//		errMsg = "invalid authenticate message"
+	//		goto DONE
+	//	}
+	//
+	//	// decrypt credentials and get the client info(such as userid, jwt, device info ...)
+	//	authCredentials, err = a.credentialCrypto.DecryptCredentials([]byte(credential.Credential))
+	//	if err != nil {
+	//		errMsg = "invalid authenticate message"
+	//		goto DONE
+	//	}
+	//
+	//	// if the credential is expired
+	//	span = time.Now().UnixMilli() - authCredentials.Timestamp
+	//	if span > 1500*1500 {
+	//		errMsg = "credential expired"
+	//		goto DONE
+	//	}
+	//
+	//	// set the new id (if the user id is exists in other device, offline it)
+	//	newId, err = a.updateClient(client, authCredentials)
+	//
+	//DONE:
+	//	ac, _ := json.Marshal(authCredentials)
+	//	a.ctx.Logger.Debugf("credential: %s", string(ac))
+	//
+	//	if err != nil || errMsg != "" {
+	//		_ = a.gateway.EnqueueMessage(client.GetInfo().ID, _message.NewMessage(message.GetSeq(), _message.ActionNotifyError, errMsg))
+	//		return
+	//	}
+	//
+	//	_ = a.gateway.EnqueueMessage(newId, _message.NewMessage(message.GetSeq(), _message.ActionNotifySuccess, nil))
+	//return
 }
 
 func (a *Authenticator) updateClient(client Client, authCredentials *ClientAuthCredentials) (ID, error) {
@@ -296,7 +317,7 @@ func (a *Authenticator) updateClient(client Client, authCredentials *ClientAuthC
 
 	// check if the client is exists in local, if not exist, check the other server
 	// the client is exists normally, because create a client it the previous step
-	err := a.gateway.SetClientID(oldID, newID)
+	err = a.gateway.SetClientID(oldID, newID)
 
 	//if err != nil && err.Error() == errClientAlreadyExist {
 	//	// if userid and device is equals, return it directly

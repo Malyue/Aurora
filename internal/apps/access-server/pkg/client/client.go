@@ -29,6 +29,8 @@ type ClientAuthCredentials struct {
 
 	UserID string `json:"user_id"`
 
+	Token string `json:"token"`
+
 	DeviceID string `json:"device_id"`
 
 	DeviceName string `json:"device_name"`
@@ -71,5 +73,5 @@ type ClientSecrets struct {
 	// if service want to control which one the client can send message to, service can generate different secret for client,
 	// and notify the gateway update the secret, to make client old sign invalid.
 	MessageDeliverSecret string `json:"message_deliver_secret"`
-	OnlineStateSecret    string `json:"online_state_secret"`
+	//OnlineStateSecret    string `json:"online_state_secret"`
 }

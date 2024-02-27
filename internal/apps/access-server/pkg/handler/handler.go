@@ -3,7 +3,6 @@ package handler
 import (
 	_client "Aurora/internal/apps/access-server/pkg/client"
 	_message "Aurora/internal/apps/access-server/pkg/message"
-	"Aurora/internal/apps/access-server/pkg/store"
 	"Aurora/internal/apps/access-server/pkg/subscription"
 	"Aurora/internal/apps/access-server/svc"
 )
@@ -11,16 +10,16 @@ import (
 type MessageHandlerImpl struct {
 	def *MessageInterfaceImpl
 	// TODO get message model
-	store store.MessageStore
+	//store store.MessageStore
 	//userState *UserState
 	ctx *svc.ServerCtx
 }
 
 func NewHandlerWithOptions(gateway _client.Gateway, ctx *svc.ServerCtx, opts *MessageHandlerOptions) (*MessageHandlerImpl, error) {
-	impl, err := NewDefaultImpl(&Options{
+	impl, err := NewDefaultImpl(ctx, &Options{
 		NotifyServerError:     true,
 		MaxMessageConcurrency: 10_0000,
-	}, ctx.Logger)
+	})
 	if err != nil {
 		return nil, err
 	}

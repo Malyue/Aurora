@@ -7,6 +7,8 @@ import (
 
 // handleChatMessage
 func (d *MessageHandlerImpl) handleChatMessage(c *_client.Info, m *_message.Message) error {
+	// 1. store the msg
+	// 2. send msg to the receiver
 	msg := &_message.ChatMessage{}
 	// unmarshal message to chat message
 	if !d.unmarshalData(m, msg) {
@@ -18,10 +20,10 @@ func (d *MessageHandlerImpl) handleChatMessage(c *_client.Info, m *_message.Mess
 	msg.To = m.To
 
 	// if id equals 0 means the message is not receive by server
-	if msg.Mid == 0 && m.Action != _message.ActionChatMessageResend {
-		// TODO store it in mysql
-
-	}
+	//if msg.Mid == 0 && m.Action != _message.ActionChatMessageResend {
+	//	// TODO store it in mysql
+	//
+	//}
 
 	// send to client ack, it means the server get the msg from client
 	err := d.ackChatMessage(c, msg)

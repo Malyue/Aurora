@@ -17,3 +17,14 @@ type ChatMessage struct {
 	Content string `json:"content,omitempty"`
 	SendAt  int64  `json:"sendAt,omitempty"`
 }
+
+type GroupMessage struct {
+	CliMid  string `json:"cliMid,omitempty"`
+	Mid     int64  `json:"mid,omitempty"`
+	GroupId string `json:"group_id,omitempty"`
+	Seq     int64  `json:"seq,omitempty"`
+	From    string `json:"from,omitempty"`
+	Type    int32  `json:"type,omitempty"`
+	Content string `json:"content,omitempty"`
+	SendAt  int64  `json:"sendAt,omitempty"`
+}

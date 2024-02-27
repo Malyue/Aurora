@@ -5,8 +5,6 @@ import (
 	_message "Aurora/internal/apps/access-server/pkg/message"
 )
 
-const KeyRedisOfflineMsgPrefix = "im.msg.offline"
-
 // handleAckRequest get ack from receiver and send ack response to sender
 func (d *MessageHandlerImpl) handleAckRequest(clientInfo *_client.Info, message *_message.Message) error {
 	ackMsg := &_message.AckRequest{}
@@ -22,7 +20,7 @@ func (d *MessageHandlerImpl) handleAckRequest(clientInfo *_client.Info, message 
 }
 
 func (d *MessageHandlerImpl) handleAckOffline(c *_client.Info, message *_message.Message) error {
-	key := KeyRedisOfflineMsgPrefix + c.ID.UID()
+	key := d.ctx.RedisClient.KeyRedisOfflineMsgPrefix + c.ID.UID()
 	//result,err := db.Redis.Del(key).Result()
 
 }

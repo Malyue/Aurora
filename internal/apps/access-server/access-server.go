@@ -1,7 +1,6 @@
 package access_server
 
 import (
-	userpb "Aurora/api/proto-go/user"
 	_redisx "Aurora/internal/apps/access-server/model/redis"
 	_client "Aurora/internal/apps/access-server/pkg/client"
 	_handler "Aurora/internal/apps/access-server/pkg/handler"
@@ -57,15 +56,14 @@ type Server struct {
 	ipBlackList     map[string]uint64
 	ipBlackListLock sync.RWMutex
 
-	Gateway _client.Gateway
+	Gateway       _client.Gateway
+	UnAuthGateway _client.Gateway
 	// Server the ws_server(includes run and handler conn)
 	Server _conn.Server
 
 	//NodeSnowFlake *_pkg.Worker
 	// Node Manager select a node to send msg
 
-	// grpc client
-	UserServer userpb.UserServiceClient
 }
 
 func New(opts ...OptionFunc) (*Server, error) {
@@ -120,10 +118,13 @@ func New(opts ...OptionFunc) (*Server, error) {
 		logger.Errorf("init redis err : %v", err)
 	}
 
+	// TODO 创建对应的消费者，订阅某个队列
+
 	ctx := &svc.ServerCtx{
 		Logger:      logger,
 		Ctx:         context.Background(),
 		RedisClient: &_redisx.RedisClient{Client: redisClient},
+		UserServer:  userServer,
 	}
 
 	wsServer := _conn.NewWsServer(ctx, &cfg.WsOpts)
@@ -131,6 +132,11 @@ func New(opts ...OptionFunc) (*Server, error) {
 	if err != nil {
 		ctx.Logger.Errorf("New Gateway error : %s", err)
 	}
+
+	//unAuthGateway, err := _client.NewClientHub(ctx, &cfg.GwOpts)
+	//if err != nil {
+	//	ctx.Logger.Errorf("New unAuth Gateway error : %s", err)
+	//}
 
 	handler, err := _handler.NewHandlerWithOptions(gateway, ctx, &cfg.MsgHandlerOpts)
 	if err != nil {
@@ -144,20 +150,26 @@ func New(opts ...OptionFunc) (*Server, error) {
 		}
 	})
 
+	//unAuthGateway.SetMessageHandler(func(cliInfo *_client.Info, message *_message.Message) {
+	//	err = unAuthHandler.Handle(cliInfo, message)
+	//	if err != nil {
+	//		ctx.Logger.Errorf("handler message error : %s", err)
+	//	}
+	//})
+
 	return &Server{
 		Config: cfg,
 		//NodeSnowFlake: snowflakeWorker,
 		start: time.Now(),
 		//connManager: connManager,
-		Server:     wsServer,
-		Gateway:    gateway,
-		UserServer: userServer,
+		Server:  wsServer,
+		Gateway: gateway,
 	}, nil
 }
 
 func (s *Server) Run() error {
 	// start server to get
-	//s.StartWSServer()
+
 	s.Server.SetConnHandler(func(conn _conn.Conn) {
 		s.handlerConn(conn)
 	})

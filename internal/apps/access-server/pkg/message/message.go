@@ -12,6 +12,7 @@ var Ver1 int64 = 1
 type Message struct {
 	Ver    int64  `json:"ver,omitempty"`
 	Seq    int64  `json:"seq,omitempty"`
+	ID     int64  `json:"id,omitempty"`
 	Action string `json:"action"`
 	From   string `json:"from,omitempty"`
 	To     string `json:"to,omitempty"`
