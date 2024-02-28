@@ -1,14 +1,14 @@
-package push_server
+package logic_server
 
 import (
+	"Aurora/internal/apps/push-server/svc"
 	"context"
 	"net"
 
 	"google.golang.org/grpc"
 
 	grouppb "Aurora/api/proto-go/group"
-	"Aurora/internal/apps/push-server/service"
-	"Aurora/internal/apps/push-server/svc"
+	"Aurora/internal/apps/logic-server/service"
 	discovery "Aurora/internal/pkg/etcd"
 	_log "Aurora/internal/pkg/log"
 	_mysql "Aurora/internal/pkg/mysql"

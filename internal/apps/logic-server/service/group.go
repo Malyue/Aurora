@@ -1,12 +1,12 @@
 package service
 
 import (
+	"Aurora/internal/apps/push-server/svc"
 	"context"
 	"sync"
 
 	grouppb "Aurora/api/proto-go/group"
-	groupmodel "Aurora/internal/apps/push-server/model/group"
-	"Aurora/internal/apps/push-server/svc"
+	groupmodel "Aurora/internal/apps/logic-server/model/group"
 )
 
 var GroupServerOnce sync.Once

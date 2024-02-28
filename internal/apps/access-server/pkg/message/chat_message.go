@@ -28,3 +28,14 @@ type GroupMessage struct {
 	Content string `json:"content,omitempty"`
 	SendAt  int64  `json:"sendAt,omitempty"`
 }
+
+type ApplyMessage struct {
+	CliMid  string `json:"cliMid,omitempty"`
+	Mid     int64  `json:"mid,omitempty"`
+	GroupId string `json:"group_id"`
+	UserId  string `json:"user_id"`
+	Seq     int64  `json:"seq,omitempty"`
+	From    string `json:"from,omitempty"`
+	Content string `json:"content,omitempty"`
+	SendAt  int64  `json:"sendAt,omitempty"`
+}
