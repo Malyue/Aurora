@@ -95,3 +95,7 @@ func (c *WsConn) wrapError(err error) error {
 	}
 	return err
 }
+
+func (c *WsConn) SetPongHandler(h func(appData string) error) {
+	c.conn.SetPongHandler(h)
+}

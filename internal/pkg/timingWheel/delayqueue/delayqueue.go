@@ -35,10 +35,14 @@ func (pq priorityQueue) Swap(i, j int) {
 	pq[j].Index = j
 }
 
+// Push
 func (pq *priorityQueue) Push(x interface{}) {
 	n := len(*pq)
 	c := cap(*pq)
 	if n+1 > c {
+		if c == 0 {
+			c = 1
+		}
 		npq := make(priorityQueue, n, c*2)
 		copy(npq, *pq)
 		*pq = npq
@@ -63,6 +67,7 @@ func (pq *priorityQueue) Pop() interface{} {
 	return item
 }
 
+// PeekAndShift pop
 func (pq *priorityQueue) PeekAndShift(max int64) (*item, int64) {
 	if pq.Len() == 0 {
 		return nil, 0
@@ -110,6 +115,7 @@ func (dq *DelayQueue) Insert(elem interface{}, expiration int64) {
 	}
 }
 
+// Poll fn is the method to get timestamp
 func (dq *DelayQueue) Poll(exitC chan struct{}, fn func() int64) {
 	for {
 		now := fn()
@@ -123,13 +129,17 @@ func (dq *DelayQueue) Poll(exitC chan struct{}, fn func() int64) {
 
 		if item == nil {
 			if delta == 0 {
+				// it means pq is null
 				select {
+				// if it has any inserted elem, continue
 				case <-dq.wakeupC:
 					continue
+				// if exit
 				case <-exitC:
 					goto exit
 				}
 			} else if delta > 0 {
+				// it means the first elem is not expire
 				select {
 				// a new item with earlier expiration than current item, we should use the earlier
 				case <-dq.wakeupC:
@@ -138,7 +148,7 @@ func (dq *DelayQueue) Poll(exitC chan struct{}, fn func() int64) {
 					// reset the sleeping state since there's no need to receive from wakeupC
 					if atomic.SwapInt32(&dq.sleeping, 0) == 0 {
 						// a caller of Offer() is being blocked on sending to wakeupC
-						// drain wakeupC to ubblock the caller
+						// drain wakeupC to unblock the caller
 						<-dq.wakeupC
 					}
 					continue

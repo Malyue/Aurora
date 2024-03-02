@@ -1,6 +1,9 @@
 package conn
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 var (
 	ErrClosed      = errors.New("Conn closed")
@@ -9,10 +12,12 @@ var (
 )
 
 type Conn interface {
-	Write(data []byte) error
+	Write(msgType int, data []byte) error
 	Read() ([]byte, error)
 	Close() error
 	GetConnInfo() *ConnInfo
+	SetPongHandler(h func(appData string) error)
+	SetReadDeadLine(t time.Time) error
 }
 
 type ConnInfo struct {

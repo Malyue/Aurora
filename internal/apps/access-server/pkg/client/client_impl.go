@@ -3,16 +3,14 @@ package client
 import (
 	"Aurora/internal/apps/access-server/pkg/conn"
 	_message "Aurora/internal/apps/access-server/pkg/message"
-	"Aurora/internal/apps/access-server/pkg/timingWheel"
 	"Aurora/internal/apps/access-server/svc"
 	"errors"
+	"github.com/gorilla/websocket"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 )
-
-var tw = timingWheel.NewTimingWheel(500*time.Millisecond, 2000)
 
 type MessageInterceptor = func(client Client, msg *_message.Message) bool
 
@@ -21,6 +19,9 @@ const (
 	defaultHeartbeatDuration       = time.Second * 20
 	defaultHeartbeatLostLimit      = 3
 	defaultCloseImmediately        = false
+	// Time allowed to read the next pong message from the peer.
+	pongWait   = 60 * time.Second
+	pingPeriod = (pongWait * 9) / 10
 )
 
 // ClientConfig client config
@@ -64,8 +65,8 @@ type UserClient struct {
 	closeWriteOnce sync.Once
 	closeReadOnce  sync.Once
 
-	hbC    *timingWheel.Timer
-	hbS    *timingWheel.Timer
+	//hbC    *timingWheel.Timer
+	//hbS    *timingWheel.Timer
 	hbLost int
 
 	info *Info
@@ -80,11 +81,11 @@ type UserClient struct {
 	credentials *ClientAuthCredentials
 }
 
-func NewClient(conn conn.Conn, mgr Gateway, msgHandler MessageHandler) Client {
-	return NewClientWithConfig(conn, mgr, msgHandler, nil)
+func NewClient(conn conn.Conn, mgr Gateway, msgHandler MessageHandler, ctx *svc.ServerCtx) Client {
+	return NewClientWithConfig(conn, mgr, msgHandler, ctx, nil)
 }
 
-func NewClientWithConfig(conn conn.Conn, mgr Gateway, msgHandler MessageHandler, cfg *Config) Client {
+func NewClientWithConfig(conn conn.Conn, mgr Gateway, msgHandler MessageHandler, ctx *svc.ServerCtx, cfg *Config) Client {
 	if cfg == nil {
 		cfg = &Config{
 			ClientHeartbeatDuration: defaultHeartbeatDuration,
@@ -100,13 +101,13 @@ func NewClientWithConfig(conn conn.Conn, mgr Gateway, msgHandler MessageHandler,
 		closeReadCh:  make(chan struct{}),
 		closeWriteCh: make(chan struct{}),
 		msgHandler:   msgHandler,
-		// TODO init hbC and hbS
 		info: &Info{
 			ConnectionAt: time.Now().UnixMilli(),
 			CliAddr:      conn.GetConnInfo().Addr,
 		},
 		cfg: cfg,
 		mgr: mgr,
+		ctx: ctx,
 	}
 
 	return &ret
@@ -134,6 +135,11 @@ func (c *UserClient) readPump() {
 	}()
 
 	readChan, done := messageReader.ReadCh(c.conn)
+	c.conn.SetReadDeadLine(time.Now().Add(pongWait))
+	c.conn.SetPongHandler(func(string) error {
+		c.conn.SetReadDeadLine(time.Now().Add(pongWait))
+		return nil
+	})
 	var closeReason string
 	for {
 		select {
@@ -198,6 +204,13 @@ func (c *UserClient) writePump() {
 		}
 	}()
 	var closeReason string
+	pingChan := make(chan struct{})
+	c.ctx.TimingWheel.ScheduleFunc(&Scheduler{
+		Interval: pingPeriod,
+	}, func() {
+		// send ping message
+		pingChan <- struct{}{}
+	})
 	for {
 		select {
 		case <-c.closeWriteCh:
@@ -205,6 +218,9 @@ func (c *UserClient) writePump() {
 				closeReason = "closed initiative"
 			}
 			goto STOP
+		case <-pingChan:
+			// send ping msg
+			c.write2Conn(websocket.PingMessage, nil)
 		//case <-c.hbS.C:
 		//	if !c.IsRunning() {
 		//		closeReason = "client not running"
@@ -219,7 +235,7 @@ func (c *UserClient) writePump() {
 				c.Exit()
 				break
 			}
-			c.write2Conn(m)
+			c.write2Conn(websocket.TextMessage, m)
 			//c.hbS.Cancel()
 			//c.hbS = tw.After(c.config.ServerHeartbeatDuration)
 		}
@@ -274,7 +290,7 @@ func (c *UserClient) close() {
 	_ = c.conn.Close()
 }
 
-func (c *UserClient) write2Conn(m *_message.Message) {
+func (c *UserClient) write2Conn(msgType int, m *_message.Message) {
 	// encode msg as byte
 	b, err := defautlCodec.Encode(m)
 	if err != nil {
@@ -282,7 +298,7 @@ func (c *UserClient) write2Conn(m *_message.Message) {
 		return
 	}
 
-	err = c.conn.Write(b)
+	err = c.conn.Write(msgType, b)
 	// sub queue message
 	atomic.AddInt64(&c.queueMessage, -1)
 	if err != nil {

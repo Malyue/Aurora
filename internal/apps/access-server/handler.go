@@ -16,7 +16,7 @@ func (s *Server) handlerConn(conn _conn.Conn) _client.ID {
 		return ""
 	}
 
-	ret := _client.NewClientWithConfig(conn, s.Gateway, s.Gateway.GetMessageHandler(), &_client.Config{
+	ret := _client.NewClientWithConfig(conn, s.Gateway, s.Gateway.GetMessageHandler(), s.svcCtx, &_client.Config{
 		HeartbeatLostLimit:      3,
 		ClientHeartbeatDuration: time.Second * 30,
 		ServerHeartbeatDuration: time.Second * 30,
