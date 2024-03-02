@@ -30,8 +30,8 @@ type ConnProxy struct {
 	Conn Conn
 }
 
-func (c ConnProxy) Write(data []byte) error {
-	return c.Conn.Write(data)
+func (c ConnProxy) Write(msgType int, data []byte) error {
+	return c.Conn.Write(msgType, data)
 }
 
 func (c ConnProxy) Read() ([]byte, error) {

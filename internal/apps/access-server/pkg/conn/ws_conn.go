@@ -29,11 +29,11 @@ func NewWsConnection(conn *websocket.Conn, opt *Option) *WsConn {
 	return c
 }
 
-func (c *WsConn) Write(data []byte) error {
+func (c *WsConn) Write(msgType int, data []byte) error {
 	ddl := time.Now().Add(time.Duration(c.options.WriteTimeout))
 	_ = c.conn.SetWriteDeadline(ddl)
 
-	err := c.conn.WriteMessage(websocket.TextMessage, data)
+	err := c.conn.WriteMessage(msgType, data)
 	return c.wrapError(err)
 }
 
